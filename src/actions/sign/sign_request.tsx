@@ -1,5 +1,6 @@
 import React from 'react'
 import { json } from 'stream/consumers'
+import ApiUrlBase from '../api'
 
 interface User {
     role: string,
@@ -9,10 +10,9 @@ interface User {
 export default async function SignService(email: string, password: string, name: string) {
 
 
+    const baseUrl = ApiUrlBase()
 
-    console.log(email, " " , password, " ", password)
-
-    const res = await fetch("http://localhost:5000/api/v1/users", {
+    const res = await fetch(`${baseUrl}/users`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -22,8 +22,11 @@ export default async function SignService(email: string, password: string, name:
         })
     })
 
-    if (!res.ok) {
-        throw new Error("Login failed");
+
+    if (res.status === 409) {
+        throw new Error("CONFLICT");
     }
+
+
 
 }

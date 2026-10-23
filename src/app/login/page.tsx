@@ -3,8 +3,10 @@ import LoginService from "@/src/actions/login/login_request";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react"
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
+    const router = useRouter()
     const [email, setEmail] = useState<string>("")
     const [password, setPassword] = useState<string>("")
 
@@ -37,6 +39,8 @@ export default function LoginPage() {
         if (emailMsg || passwordMsg) return
 
         await LoginService(email.trim(), password)
+
+        router.push("/")
     }
 
     const inputBase =
@@ -90,7 +94,7 @@ export default function LoginPage() {
                         {/* Email */}
                         <div className="flex flex-col gap-1.5">
                             <label htmlFor="email" className="text-sm font-medium text-slate-700">
-                                Email
+                                E-mail
                             </label>
                             <input
                                 id="email"

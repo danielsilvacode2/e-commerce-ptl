@@ -2,8 +2,10 @@
 import SignService from "@/src/actions/sign/sign_request";
 import { Eye, EyeOff } from "lucide-react"
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function SignUpPage() {
+    const router = useRouter()
     const [name, setName] = useState<string>("")
     const [email, setEmail] = useState<string>("")
     const [password, setPassword] = useState<string>("")
@@ -12,6 +14,8 @@ export default function SignUpPage() {
     const [nameError, setNameError] = useState<string>("")
     const [emailError, setEmailError] = useState<string>("")
     const [passwordError, setPasswordError] = useState<string>("")
+    const [formError, setFormError] = useState<string>("")
+    const [loading, setLoading] = useState<boolean>(false)
 
     function validateName(value: string): string {
         const trimmed = value.trim()
@@ -42,11 +46,24 @@ export default function SignUpPage() {
         setNameError(nameMsg)
         setEmailError(emailMsg)
         setPasswordError(passwordMsg)
+        setFormError("")
 
         // Se algum campo estiver inválido, não faz o cadastro
         if (nameMsg || emailMsg || passwordMsg) return
 
-        await SignService(email, password, name)
+        setLoading(true)
+        try {
+            await SignService(email, password, name)
+            router.push("/login")
+        } catch (err) {
+            if (err instanceof Error && err.message === "CONFLICT") {
+                setEmailError("This email is already registered.")
+            } else {
+                setFormError("Something went wrong. Please try again.")
+            }
+        } finally {
+            setLoading(false)
+        }
     }
 
     const inputBase =
@@ -127,7 +144,7 @@ export default function SignUpPage() {
                         {/* Email */}
                         <div className="flex flex-col gap-1.5">
                             <label htmlFor="email" className="text-sm font-medium text-slate-700">
-                                Email
+                                E-mail
                             </label>
                             <input
                                 id="email"
@@ -192,16 +209,24 @@ export default function SignUpPage() {
                                 </span>
                             ) : (
                                 <span className="text-xs text-slate-500">
-                                    Must be at least 6 characters.
+                                    Must be at least 8 characters.
                                 </span>
                             )}
                         </div>
 
+                        {/* Erro geral do formulário */}
+                        {formError && (
+                            <span role="alert" className="text-xs text-red-600">
+                                {formError}
+                            </span>
+                        )}
+
                         <button
                             type="submit"
-                            className="mt-1 h-11 rounded-lg bg-blue-900 text-sm font-medium text-white transition hover:bg-blue-800 active:bg-blue-950 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-700/30 cursor-pointer"
+                            disabled={loading}
+                            className="mt-1 h-11 rounded-lg bg-blue-900 text-sm font-medium text-white transition hover:bg-blue-800 active:bg-blue-950 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-700/30 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                         >
-                            Sign up
+                            {loading ? "Signing up..." : "Sign up"}
                         </button>
                     </form>
 
