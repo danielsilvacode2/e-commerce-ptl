@@ -17,11 +17,12 @@ export type ProductCreateRequest = {
 export default async function ProductCreateService(data: ProductCreateRequest) {
 
     const user = JSON.parse(localStorage.getItem("user") || "{}")
-    
+
     const baseUrl = ApiUrlBase()
 
     const res = await fetch(`${baseUrl}/products`, {
         method: "POST",
+        credentials: "include",
         headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${user.token}`,

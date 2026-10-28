@@ -8,12 +8,13 @@ interface User {
     token: string
 }
 
-export default async function LoginService(email: string, password: string): Promise<string> {
+export default async function LoginService(email: string, password: string) {
 
     const baseUrl = ApiUrlBase()
 
     const res = await fetch(`${baseUrl}/login`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             email: email,
@@ -22,20 +23,7 @@ export default async function LoginService(email: string, password: string): Pro
     })
 
     if (!res.ok) {
-        throw new Error("Login failed");
+        throw new Error("401");
     }
-
-    const data = await res.json();
-    const userRole = data["Body:"].user_role;
-    const userToken = data["Body:"].token;
-
-    const user: User = {
-        role: userRole,
-        token: userToken
-    }
-
-    localStorage.setItem('user', JSON.stringify(user))
-
-    return userRole
 
 }

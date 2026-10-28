@@ -21,14 +21,14 @@ export default async function ProductReadAllService(): Promise<ProductResponse[]
         headers: {
             "Content-Type": "application/json",
         },
-        cache: "no-store", // opcional: evita cache no Next.js
+        cache: "no-store", 
     })
 
     if (!res.ok) {
         throw new Error(`Erro ao buscar produtos: ${res.status} ${res.statusText}`)
     }
 
-    const data: ProductResponse[] = await res.json()
+    const data = await res.json()
 
-    return data ?? [] // Go retorna `null` para slice nil
+    return Array.isArray(data["Body:"])? data["Body:"] :[]
 }

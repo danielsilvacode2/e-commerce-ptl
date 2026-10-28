@@ -1,9 +1,10 @@
-'use client';
-import LoginService from "@/src/actions/login/login_request";
-import Link from "next/link";
+'use client'
+
+import LoginService from "@/src/actions/login/login_request"
+import Link from "next/link"
 import { Eye, EyeOff } from "lucide-react"
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react"
+import { useRouter } from "next/navigation"
 
 export default function LoginPage() {
     const router = useRouter()
@@ -14,17 +15,19 @@ export default function LoginPage() {
     const [emailError, setEmailError] = useState<string>("")
     const [passwordError, setPasswordError] = useState<string>("")
 
+    const [errLogin, setErrLogin] = useState<string>("")
+
     function validateEmail(value: string): string {
         const trimmed = value.trim()
-        if (!trimmed) return "Email is required."
+        if (!trimmed) return "O e-mail é obrigatório."
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
-        if (!emailRegex.test(trimmed)) return "Enter a valid email address."
+        if (!emailRegex.test(trimmed)) return "Insira um endereço de e-mail válido."
         return ""
     }
 
     function validatePassword(value: string): string {
-        if (!value) return "Password is required."
-        if (value.length < 6) return "Password must be at least 6 characters."
+        if (!value) return "A senha é obrigatória."
+        if (value.length < 6) return "A senha deve ter pelo menos 6 caracteres."
         return ""
     }
 
@@ -35,56 +38,58 @@ export default function LoginPage() {
         setEmailError(emailMsg)
         setPasswordError(passwordMsg)
 
-        // Se algum campo estiver inválido, não faz o login
         if (emailMsg || passwordMsg) return
 
-        await LoginService(email.trim(), password)
-
-        router.push("/")
+        try {
+            await LoginService(email.trim(), password)
+            router.push("/")
+        } catch (err) {
+                setErrLogin("Senha ou e-mail inválido")
+        }
     }
 
+   
     const inputBase =
-        "h-11 w-full rounded-lg border bg-white px-3.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:ring-4"
-    const inputOk = "border-slate-300 focus:border-blue-700 focus:ring-blue-700/15"
-    const inputInvalid = "border-red-500 focus:border-red-500 focus:ring-red-500/15"
+        "h-11 w-full rounded-none border bg-[#1c1c1c] px-3.5 text-sm text-[#eaeaea] placeholder:text-neutral-500 outline-none transition font-inter"
+    const inputOk = "border-[#333] focus:border-[#ff6a00] focus:ring-1 focus:ring-[#ff6a00]"
+    const inputInvalid = "border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500"
 
     return (
-        <main className="min-h-screen w-full grid lg:grid-cols-[1.1fr_1fr] bg-white font-inter">
-            {/* Painel da marca */}
-            <section
-                className="hidden lg:flex flex-col justify-between p-12 text-white bg-blue-900 bg-cover bg-center"
-                style={{ backgroundImage: "url('/assests/bg-ocean-blue900.png')" }}
-            >
-                <img className="w-[270px]" src="/assests/logo_ocean.png" alt="Ocean" />
+        <main className="min-h-screen w-full grid lg:grid-cols-[1.1fr_1fr] bg-[#121212] font-inter text-[#eaeaea]">
+            {/* Painel lateral da marca (substituído por visual industrial neutro) */}
+            <section className="hidden lg:flex flex-col justify-between p-12 text-[#eaeaea] bg-[#161616] border-r border-[#333] relative overflow-hidden">
+                <div className="absolute inset-0 bg-[radial-gradient(#333_1px,transparent_1px)] [background-size:16px_16px] opacity-30" />
+                
+                <span className="font-['Barlow_Condensed',Impact,sans-serif] text-2xl font-bold uppercase tracking-wider text-[#ff6a00] z-10">
+                    STORE // ACCESS
+                </span>
 
-                <div className="max-w-sm">
-                    <h1 className="text-4xl font-semibold leading-tight tracking-tight">
-                        Hello, welcome!
+                <div className="max-w-sm z-10">
+                    <h1 className="font-['Barlow_Condensed',Impact,sans-serif] text-4xl font-bold uppercase tracking-wide leading-tight text-[#eaeaea]">
+                        Acesso Restrito ao Sistema
                     </h1>
-                    <p className="mt-3 text-sm text-blue-100/80 leading-relaxed">
-                        All data is protected and encrypted by the system.
+                    <p className="mt-3 text-xs text-neutral-400 leading-relaxed uppercase tracking-wider">
+                        Todos os dados de acesso são protegidos e criptografados.
                     </p>
+                </div>
+
+                <div className="text-[11px] uppercase tracking-widest text-neutral-600 z-10">
+                    Secure Terminal v2.6
                 </div>
             </section>
 
             {/* Formulário */}
-            <section className="flex items-center justify-center px-6 py-12">
+            <section className="flex items-center justify-center px-6 py-12 bg-[#121212]">
                 <div className="w-full max-w-[360px]">
-                    <img
-                        className="lg:hidden w-[170px] mb-10"
-                        src="/assests/logo-ocean-azul-escuro.png"
-                        alt="Ocean"
-                    />
-
-                    <h2 className="text-2xl font-semibold text-slate-900 tracking-tight">
-                        Sign in to your account
+                    <h2 className="font-['Barlow_Condensed',Impact,sans-serif] text-3xl font-bold uppercase tracking-wide text-[#eaeaea]">
+                        Entre na sua conta
                     </h2>
-                    <p className="mt-1.5 text-sm text-slate-500">
-                        Enter your credentials to continue.
+                    <p className="mt-1.5 text-xs text-neutral-400 uppercase tracking-wider">
+                        Insira suas credenciais para continuar.
                     </p>
 
                     <form
-                        className="mt-5 flex flex-col gap-5"
+                        className="mt-6 flex flex-col gap-5"
                         noValidate
                         onSubmit={(e) => {
                             e.preventDefault()
@@ -93,7 +98,7 @@ export default function LoginPage() {
                     >
                         {/* Email */}
                         <div className="flex flex-col gap-1.5">
-                            <label htmlFor="email" className="text-sm font-medium text-slate-700">
+                            <label htmlFor="email" className="text-xs uppercase tracking-widest text-neutral-300 font-medium">
                                 E-mail
                             </label>
                             <input
@@ -107,12 +112,12 @@ export default function LoginPage() {
                                 aria-describedby={emailError ? "email-error" : undefined}
                                 onChange={(e) => {
                                     setEmail(e.target.value)
-                                    if (emailError) setEmailError("") // limpa o erro ao digitar
+                                    if (emailError) setEmailError("")
                                 }}
                                 onBlur={() => setEmailError(validateEmail(email))}
                             />
                             {emailError && (
-                                <span id="email-error" role="alert" className="text-xs text-red-600">
+                                <span id="email-error" role="alert" className="text-[11px] uppercase tracking-wider text-red-500">
                                     {emailError}
                                 </span>
                             )}
@@ -123,15 +128,15 @@ export default function LoginPage() {
                             <div className="flex items-center justify-between">
                                 <label
                                     htmlFor="password"
-                                    className="text-sm font-medium text-slate-700"
+                                    className="text-xs uppercase tracking-widest text-neutral-300 font-medium"
                                 >
-                                    Password
+                                    Senha
                                 </label>
                                 <a
                                     href="#"
-                                    className="text-sm text-blue-800 hover:underline underline-offset-4"
+                                    className="text-xs uppercase tracking-wider text-neutral-400 hover:text-[#ff6a00] transition"
                                 >
-                                    Forgot password?
+                                    Esqueceu sua senha?
                                 </a>
                             </div>
 
@@ -139,7 +144,7 @@ export default function LoginPage() {
                                 <input
                                     id="password"
                                     type={showPassword ? "text" : "password"}
-                                    placeholder="Enter your password"
+                                    placeholder="••••••••"
                                     autoComplete="current-password"
                                     className={`${inputBase} pr-11 ${passwordError ? inputInvalid : inputOk}`}
                                     value={password}
@@ -155,34 +160,38 @@ export default function LoginPage() {
                                     type="button"
                                     onClick={() => setShowPassword((prev) => !prev)}
                                     aria-label={showPassword ? "Hide password" : "Show password"}
-                                    className="absolute inset-y-0 right-0 flex items-center px-3.5 text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                                    className="absolute inset-y-0 right-0 flex items-center px-3.5 text-neutral-400 hover:text-[#eaeaea] transition cursor-pointer"
                                 >
                                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                 </button>
                             </div>
 
-                            {passwordError && (
-                                <span id="password-error" role="alert" className="text-xs text-red-600">
-                                    {passwordError}
-                                </span>
-                            )}
+                            <span id="password-error" role="alert" className="text-[11px] uppercase tracking-wider text-red-500">
+                                {passwordError}
+                            </span>
                         </div>
 
                         <button
                             type="submit"
-                            className="mt-1 h-11 rounded-lg bg-blue-900 text-sm font-medium text-white transition hover:bg-blue-800 active:bg-blue-950 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-700/30 cursor-pointer"
+                            className="mt-2 h-11 rounded-none bg-[#ff6a00] text-xs font-medium uppercase tracking-widest text-[#161616] transition hover:brightness-110 active:brightness-95 cursor-pointer"
                         >
-                            Log in
+                            Entrar
                         </button>
                     </form>
 
-                    <p className="mt-8 text-sm text-slate-500">
-                        Don't have an account?{" "}
+                    {errLogin && (
+                        <span role="alert" className="mt-3 block text-[11px] uppercase tracking-wider text-red-500">
+                            {errLogin}
+                        </span>
+                    )}
+
+                    <p className="mt-8 text-xs uppercase tracking-wider text-neutral-400">
+                        Não tem uma conta?{" "}
                         <Link
                             href="/sign"
-                            className="font-medium text-blue-900 hover:underline underline-offset-4"
+                            className="font-medium text-[#ff6a00] hover:underline underline-offset-4"
                         >
-                            Sign up
+                            Cadastre-se
                         </Link>
                     </p>
                 </div>
