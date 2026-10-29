@@ -1,18 +1,21 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import ReadMe, { UserResponse } from '@/src/actions/me/readMe'
+import ReadCart, { CartResponse } from '@/src/actions/cart/read_all'
 
-interface HeaderProps {
-    cartCount: number
+interface HeaderHomeProps {
+    // Muda toda vez que o carrinho é alterado; faz o header buscar o carrinho de novo
+    refreshKey?: number
 }
 
-export default function HeaderHome({ cartCount, }: HeaderProps) {
+export default function HeaderHome({ refreshKey = 0 }: HeaderHomeProps) {
     const [search, setSearch] = useState('')
     const [user, setUser] = useState<UserResponse | null>(null)
     const [painelAdmin, setPainelAdmin] = useState<boolean>(false)
     const [menuOpen, setMenuOpen] = useState(false)
+    const [cart, setCart] = useState<CartResponse | null>(null)
 
     const router = useRouter()
 
@@ -26,9 +29,31 @@ export default function HeaderHome({ cartCount, }: HeaderProps) {
             })
     }, [])
 
+    // Busca o carrinho no carregamento e sempre que refreshKey mudar
+    useEffect(() => {
+        let cancelled = false
+
+        ReadCart()
+            .then((res) => {
+                if (!cancelled) setCart(res)
+            })
+            .catch((err) => {
+                console.log('erro ao carregar carrinho', err)
+            })
+
+        return () => {
+            cancelled = true
+        }
+    }, [refreshKey])
+
+
     const handlerPainel = () => {
         router.push("/produtos")
     }
+    const handlerCart = () => {
+        router.push("/carrinho")
+    }
+
 
     const handleAccountClick = () => {
         router.push("/account")
@@ -84,8 +109,8 @@ export default function HeaderHome({ cartCount, }: HeaderProps) {
 
                     {/* ===== LINKS DESKTOP (somem no mobile) ===== */}
                     <div className="hidden items-center gap-8 md:flex">
-                        <a href="#produtos" className="hover:text-[#ff6a00]">
-                            Produtos
+                        <a href="/" className="hover:text-[#ff6a00]">
+                            Inicio
                         </a>
 
                         {user ? (
@@ -142,6 +167,7 @@ export default function HeaderHome({ cartCount, }: HeaderProps) {
                     {/* ===== CARRINHO (sempre visível) ===== */}
                     <button
                         type="button"
+                        onClick={handlerCart}
                         className="flex h-10 cursor-pointer items-center gap-2 rounded-none border border-[#333] px-3 uppercase tracking-wider transition-colors hover:bg-[#ff6a00] hover:text-[#161616] sm:px-4 md:h-11"
                     >
                         <svg
@@ -160,7 +186,7 @@ export default function HeaderHome({ cartCount, }: HeaderProps) {
                         </svg>
                         <span className="hidden sm:inline">Carrinho</span>
                         <span className="flex h-5 min-w-5 items-center justify-center rounded-none bg-[#ff6a00] px-1 text-xs font-semibold text-[#161616]">
-                            {cartCount}
+                            {cart?.list.length ?? 0}
                         </span>
                     </button>
 

@@ -1,12 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Pencil, Trash2, ImageOff, X } from 'lucide-react'
+import { Pencil, Trash2, ImageOff, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import ProductReadAllService, { ProductResponse } from '@/src/actions/product/read_all_request'
 import DeleteProductById from '@/src/actions/product/detete_product'
 import EditProductModal from './modal/modal'
 
 const DELETE_DELAY_MS = 5000
+const PAGE_LIMIT = 8
 
 const formatPrice = (value: number | string) =>
     Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -19,14 +20,36 @@ export default function MainProducts() {
     const [pendingDelete, setPendingDelete] = useState<ProductResponse | null>(null)
     const [editingProduct, setEditingProduct] = useState<ProductResponse | null>(null)
 
-    useEffect(() => {
-        ProductReadAllService()
-            .then((data) => setProducts(data))
-            .catch(() => setError("Erro ao carregar produtos."))
-            .finally(() => setLoading(false))
-    }, [])
+    // Paginação
+    const [page, setPage] = useState<number>(1)
+    const [totalPages, setTotalPages] = useState<number>(1)
+    const [totalRows, setTotalRows] = useState<number>(0)
+    const [reloadKey, setReloadKey] = useState<number>(0)
 
-    
+    useEffect(() => {
+        let cancelled = false
+        setLoading(true)
+        setError("")
+
+        ProductReadAllService(page, PAGE_LIMIT)
+            .then((res) => {
+                if (cancelled) return
+                setProducts(res.data)
+                setTotalPages(res.total_pages)
+                setTotalRows(res.total_rows)
+            })
+            .catch(() => {
+                if (!cancelled) setError("Erro ao carregar produtos.")
+            })
+            .finally(() => {
+                if (!cancelled) setLoading(false)
+            })
+
+        return () => {
+            cancelled = true
+        }
+    }, [page, reloadKey])
+
     useEffect(() => {
         if (!pendingDelete) return
 
@@ -35,7 +58,12 @@ export default function MainProducts() {
         const timer = setTimeout(async () => {
             try {
                 await DeleteProductById({ Id: product.id })
-                setProducts((prev) => prev.filter((p) => p.id !== product.id))
+                // Se era o último item de uma página que não é a primeira, volta uma página
+                if (products.length === 1 && page > 1) {
+                    setPage((p) => p - 1)
+                } else {
+                    setReloadKey((k) => k + 1)
+                }
             } catch (err) {
                 setErrorDelete("Erro ao deletar produto: " + product.name)
             } finally {
@@ -44,6 +72,7 @@ export default function MainProducts() {
         }, DELETE_DELAY_MS)
 
         return () => clearTimeout(timer)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pendingDelete])
 
     function handleEdit(product: ProductResponse) {
@@ -82,7 +111,7 @@ export default function MainProducts() {
                         </p>
                     </div>
                     <span className="shrink-0 text-[11px] uppercase tracking-widest text-[#ff6a00] sm:text-xs">
-                        {products.length} {products.length === 1 ? "item" : "itens"}
+                        {totalRows} {totalRows === 1 ? "item" : "itens"}
                     </span>
                 </header>
 
@@ -111,67 +140,100 @@ export default function MainProducts() {
                     </p>
                 )}
 
-                {/* Lista */}
+                {/* Lista + paginação */}
                 {!loading && !error && products.length > 0 && (
-                    <ul className="mt-6 flex flex-col gap-3">
-                        {products.map((product) => (
-                            <li
-                                key={product.id}
-                                className="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-3 border border-[#333] bg-[#1c1c1c] p-3 transition hover:border-[#ff6a00] sm:flex sm:gap-4"
-                            >
-                                {/* Imagem */}
-                                <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden border border-[#333] bg-[#161616] sm:h-16 sm:w-16">
-                                    {product.image ? (
-                                        // eslint-disable-next-line @next/next/no-img-element
-                                        <img
-                                            src={product.image}
-                                            alt={product.name}
-                                            className="h-full w-full object-cover"
-                                        />
-                                    ) : (
-                                        <ImageOff size={20} className="text-neutral-600" />
-                                    )}
-                                </div>
-
-                                {/* Nome + SKU */}
-                                <div className="min-w-0 sm:flex-1">
-                                    <p className="line-clamp-2 break-words text-sm font-medium uppercase tracking-wide text-[#eaeaea] sm:truncate">
-                                        {product.name}
-                                    </p>
-                                    <p className="mt-1 truncate text-[11px] uppercase tracking-widest text-neutral-500">
-                                        SKU: {product.sku}
-                                    </p>
-                                </div>
-
-                                {/* Preço + Ações (linha própria no mobile) */}
-                                <div className="col-span-2 flex items-center justify-between gap-3 border-t border-[#333] pt-3 sm:col-span-1 sm:contents sm:border-0 sm:pt-0">
-                                    <span className="shrink-0 text-sm font-medium tracking-wide text-[#ff6a00]">
-                                        {formatPrice(product.price)}
-                                    </span>
-
-                                    <div className="flex shrink-0 items-center gap-2 sm:gap-1">
-                                        <button
-                                            type="button"
-                                            onClick={() => handleEdit(product)}
-                                            aria-label={`Editar ${product.name}`}
-                                            className="flex h-10 w-10 cursor-pointer items-center justify-center border border-[#333] text-neutral-400 transition hover:border-[#ff6a00] hover:text-[#ff6a00] sm:h-9 sm:w-9"
-                                        >
-                                            <Pencil size={16} />
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleDelete(product)}
-                                            disabled={!!pendingDelete}
-                                            aria-label={`Excluir ${product.name}`}
-                                            className="flex h-10 w-10 cursor-pointer items-center justify-center border border-[#333] text-neutral-400 transition hover:border-red-500 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-40 sm:h-9 sm:w-9"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
+                    <>
+                        <ul className="mt-6 flex flex-col gap-3">
+                            {products.map((product) => (
+                                <li
+                                    key={product.id}
+                                    className="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-3 border border-[#333] bg-[#1c1c1c] p-3 transition hover:border-[#ff6a00] sm:flex sm:gap-4"
+                                >
+                                    {/* Imagem */}
+                                    <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden border border-[#333] bg-[#161616] sm:h-16 sm:w-16">
+                                        {product.image ? (
+                                            // eslint-disable-next-line @next/next/no-img-element
+                                            <img
+                                                src={product.image}
+                                                alt={product.name}
+                                                className="h-full w-full object-cover"
+                                            />
+                                        ) : (
+                                            <ImageOff size={20} className="text-neutral-600" />
+                                        )}
                                     </div>
-                                </div>
-                            </li>
-                        ))}
-                    </ul>
+
+                                    {/* Nome + SKU */}
+                                    <div className="min-w-0 sm:flex-1">
+                                        <p className="line-clamp-2 break-words text-sm font-medium uppercase tracking-wide text-[#eaeaea] sm:truncate">
+                                            {product.name}
+                                        </p>
+                                        <p className="mt-1 truncate text-[11px] uppercase tracking-widest text-neutral-500">
+                                            SKU: {product.sku}
+                                        </p>
+                                    </div>
+
+                                    {/* Preço + Ações (linha própria no mobile) */}
+                                    <div className="col-span-2 flex items-center justify-between gap-3 border-t border-[#333] pt-3 sm:col-span-1 sm:contents sm:border-0 sm:pt-0">
+                                        <span className="shrink-0 text-sm font-medium tracking-wide text-[#ff6a00]">
+                                            {formatPrice(product.price)}
+                                        </span>
+
+                                        <div className="flex shrink-0 items-center gap-2 sm:gap-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleEdit(product)}
+                                                aria-label={`Editar ${product.name}`}
+                                                className="flex h-10 w-10 cursor-pointer items-center justify-center border border-[#333] text-neutral-400 transition hover:border-[#ff6a00] hover:text-[#ff6a00] sm:h-9 sm:w-9"
+                                            >
+                                                <Pencil size={16} />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleDelete(product)}
+                                                disabled={!!pendingDelete}
+                                                aria-label={`Excluir ${product.name}`}
+                                                className="flex h-10 w-10 cursor-pointer items-center justify-center border border-[#333] text-neutral-400 transition hover:border-red-500 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-40 sm:h-9 sm:w-9"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+
+                        {totalPages > 1 && (
+                            <nav
+                                aria-label="Paginação"
+                                className="mt-6 flex items-center justify-between gap-3 border-t border-[#333] pt-4"
+                            >
+                                <button
+                                    type="button"
+                                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                    disabled={page <= 1}
+                                    aria-label="Página anterior"
+                                    className="flex h-9 w-9 cursor-pointer items-center justify-center border border-[#333] text-neutral-400 transition hover:border-[#ff6a00] hover:text-[#ff6a00] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[#333] disabled:hover:text-neutral-400"
+                                >
+                                    <ChevronLeft size={16} />
+                                </button>
+
+                                <span className="text-[11px] uppercase tracking-widest text-neutral-400 sm:text-xs">
+                                    Página <span className="text-[#ff6a00]">{page}</span> de {totalPages}
+                                </span>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                                    disabled={page >= totalPages}
+                                    aria-label="Próxima página"
+                                    className="flex h-9 w-9 cursor-pointer items-center justify-center border border-[#333] text-neutral-400 transition hover:border-[#ff6a00] hover:text-[#ff6a00] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[#333] disabled:hover:text-neutral-400"
+                                >
+                                    <ChevronRight size={16} />
+                                </button>
+                            </nav>
+                        )}
+                    </>
                 )}
             </div>
 

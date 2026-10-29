@@ -38,8 +38,8 @@ export default async function UpdateProductById({
     })
 
     if (!res.ok) {
-      
-        if (res.status == 409){
+
+        if (res.status == 409) {
             throw new Error("409")
         }
     }
