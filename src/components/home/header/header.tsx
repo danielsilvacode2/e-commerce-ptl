@@ -56,7 +56,7 @@ export default function HeaderHome({ refreshKey = 0 }: HeaderHomeProps) {
 
 
     const handleAccountClick = () => {
-        router.push("/account")
+        router.push("/conta")
     }
 
     const handlerAccountLogin = () => {
@@ -83,7 +83,7 @@ export default function HeaderHome({ refreshKey = 0 }: HeaderHomeProps) {
         <header className="sticky top-0 z-20 border-b border-[#333] bg-[#161616] font-inter text-[#eaeaea]">
             <div className="mx-auto flex max-w-[1120px] flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3 sm:px-6 md:flex-nowrap md:gap-8">
 
-                {/* Logo */}
+               
                 <a
                     href="/"
                     className="font-['Barlow_Condensed',Impact,sans-serif] text-2xl font-extrabold uppercase tracking-wide sm:text-[26px]"
@@ -217,16 +217,16 @@ export default function HeaderHome({ refreshKey = 0 }: HeaderHomeProps) {
                     <div className="mx-auto flex max-w-[1120px] flex-col px-4 py-2 text-[13px] font-medium uppercase tracking-wider sm:px-6">
 
                         <a
-                            href="#produtos"
+                            href="/"
                             onClick={() => setMenuOpen(false)}
                             className="border-b border-[#333] py-3 hover:text-[#ff6a00]"
                         >
-                            Produtos
+                           Inicio
                         </a>
 
                         {user ? (
                             <a
-                                href="/account"
+                                href="/conta"
                                 onClick={(e) => {
                                     e.preventDefault()
                                     handleAccountClick()

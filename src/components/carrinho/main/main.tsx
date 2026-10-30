@@ -7,19 +7,18 @@ import UpdateIsSelectCart from '@/src/actions/cart/update_is_select'
 import UpdateAllIsSelectCart from '@/src/actions/cart/update_all_is_select'
 import ProductReadService from '@/src/actions/product/read'
 import CreateCart from '@/src/actions/cart/create_cart'
-import RemoveProductCart from '@/src/actions/cart/delete_product_cart' // ajuste o caminho
+import RemoveProductCart from '@/src/actions/cart/delete_product_cart'
+import DecreaseProductCart from '@/src/actions/cart/decrease_product_cart'
 
-const REMOVE_DELAY = 4000
+const REMOVE_DELAY = 2000
 
 const formatPrice = (value: number | string) =>
     Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
-/** Barra que "enche" de 0% a 100% durante `duration` ms */
 function CountdownBar({ duration }: { duration: number }) {
     const [full, setFull] = useState(false)
 
     useEffect(() => {
-        // pequeno delay para o browser registrar width 0% antes de animar
         const t = setTimeout(() => setFull(true), 20)
         return () => clearTimeout(t)
     }, [])
@@ -51,7 +50,6 @@ export default function MainCart({ list = [], setList, loading = false, error = 
     const [pendingIds, setPendingIds] = useState<Set<string>>(new Set())
     const timersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
 
-    // limpa timers se o componente desmontar
     useEffect(() => {
         const timers = timersRef.current
         return () => {
@@ -84,7 +82,7 @@ export default function MainCart({ list = [], setList, loading = false, error = 
 
     async function handleToggleAll() {
         const next = !allSelected
-        const previous = items // snapshot para rollback
+        const previous = items
 
         updateList((prev) => prev.map((i) => ({ ...i, isSelect: next })))
 
@@ -118,31 +116,24 @@ export default function MainCart({ list = [], setList, loading = false, error = 
         setUpdatingId(item.id)
 
         try {
-            // 1. Consulta o estoque atual do produto
             const product = await ProductReadService(item.product_id)
             const stock = Number(product?.quantity ?? 0)
 
-            // 2. Já está no limite: só trava o botão
             if (item.quantity >= stock) {
                 markMaxed(item.id, true)
                 return
             }
 
-            // 3. Atualização otimista
             updateList((prev) =>
                 prev.map((i) => (i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i))
             )
 
-            // 4. Persiste no backend
             try {
-                // Assume que o backend SOMA. Se ele substituir, use: quantity: item.quantity + 1
                 await CreateCart({ product_id: item.product_id, quantity: (item.quantity + 1) })
 
-                // Se com este incremento chegou no limite, já desabilita o botão
                 if (item.quantity + 1 >= stock) markMaxed(item.id, true)
             } catch (err) {
                 console.log('erro ao aumentar quantidade: ' + err)
-                // rollback
                 updateList((prev) =>
                     prev.map((i) => (i.id === item.id ? { ...i, quantity: item.quantity } : i))
                 )
@@ -154,12 +145,28 @@ export default function MainCart({ list = [], setList, loading = false, error = 
         }
     }
 
-    function handleDecrease(item: ProductCartResponse) {
-        // TODO: diminuir quantidade
-        // Depois de diminuir, chame: markMaxed(item.id, false)
+    async function handleDecrease(item: ProductCartResponse) {
+        if (item.quantity <= 1 || updatingId || pendingIds.has(item.id)) return
+
+        setUpdatingId(item.id)
+
+        updateList((prev) =>
+            prev.map((i) => (i.id === item.id ? { ...i, quantity: i.quantity - 1 } : i))
+        )
+
+        try {
+            await DecreaseProductCart({ id: item.id, quantity: 1 })
+            markMaxed(item.id, false)
+        } catch (err) {
+            console.log('erro ao diminuir quantidade: ' + err)
+            updateList((prev) =>
+                prev.map((i) => (i.id === item.id ? { ...i, quantity: item.quantity } : i))
+            )
+        } finally {
+            setUpdatingId(null)
+        }
     }
 
-    /** Clique na lixeira: inicia contagem de 4s antes de remover de verdade */
     function handleRemove(item: ProductCartResponse) {
         if (timersRef.current.has(item.id)) return
 
@@ -174,7 +181,6 @@ export default function MainCart({ list = [], setList, loading = false, error = 
         timersRef.current.set(item.id, timer)
     }
 
-    /** Clique no X: cancela a remoção */
     function handleCancelRemove(item: ProductCartResponse) {
         const timer = timersRef.current.get(item.id)
         if (timer) clearTimeout(timer)
@@ -182,7 +188,6 @@ export default function MainCart({ list = [], setList, loading = false, error = 
         setPending(item.id, false)
     }
 
-    /** Remoção real (otimista, com rollback se a API falhar) */
     async function commitRemove(item: ProductCartResponse, index: number) {
         updateList((prev) => prev.filter((i) => i.id !== item.id))
         setPending(item.id, false)
@@ -192,7 +197,6 @@ export default function MainCart({ list = [], setList, loading = false, error = 
             await RemoveProductCart(item.id)
         } catch (err) {
             console.log('erro ao remover item: ' + err)
-            // rollback: devolve o item na posição original
             updateList((prev) => {
                 if (prev.some((i) => i.id === item.id)) return prev
                 const next = [...prev]
@@ -203,14 +207,12 @@ export default function MainCart({ list = [], setList, loading = false, error = 
     }
 
     function handleCheckout() {
-        // TODO: finalizar compra com os itens selecionados
     }
 
     return (
         <main className="min-h-screen w-full bg-[#121212] font-inter text-[#eaeaea] px-4 py-6 sm:px-6 sm:py-10">
             <div className="mx-auto w-full max-w-5xl">
 
-                {/* Cabeçalho */}
                 <header className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 border-b border-[#333] pb-4">
                     <div className="min-w-0">
                         <h1 className="font-['Barlow_Condensed',Impact,sans-serif] text-2xl font-bold uppercase tracking-wide text-[#eaeaea] sm:text-3xl">
@@ -225,29 +227,20 @@ export default function MainCart({ list = [], setList, loading = false, error = 
                     </span>
                 </header>
 
-                {/* Estados */}
                 {loading && (
                     <p className="mt-8 text-xs uppercase tracking-widest text-neutral-400">
                         Carregando...
                     </p>
                 )}
 
-                {error && (
-                    <span role="alert" className="mt-8 block text-[11px] uppercase tracking-wider text-red-500">
-                        {error}
-                    </span>
-                )}
-
-                {!loading && !error && items.length === 0 && (
+                {!loading && error && items.length === 0 && (
                     <p className="mt-8 text-xs uppercase tracking-widest text-neutral-500">
                         Seu carrinho está vazio.
                     </p>
                 )}
 
-                {/* Lista */}
                 {!loading && !error && items.length > 0 && (
                     <>
-                        {/* Marcar todos */}
                         <div className="mt-6 flex items-center justify-between gap-3 border border-[#333] bg-[#1c1c1c] px-3 py-2">
                             <button
                                 type="button"
@@ -280,7 +273,6 @@ export default function MainCart({ list = [], setList, loading = false, error = 
                                         className={`relative overflow-hidden grid grid-cols-[auto_auto_1fr] items-center gap-x-3 gap-y-3 border bg-[#1c1c1c] p-3 transition hover:border-[#ff6a00] sm:flex sm:gap-4 ${item.isSelect ? "border-[#ff6a00]/60" : "border-[#333]"
                                             } ${isPending ? "opacity-60" : ""}`}
                                     >
-                                        {/* Checkbox individual */}
                                         <button
                                             type="button"
                                             onClick={() => handleToggleOne(item)}
@@ -294,7 +286,6 @@ export default function MainCart({ list = [], setList, loading = false, error = 
                                             <Check size={14} strokeWidth={3} />
                                         </button>
 
-                                        {/* Imagem */}
                                         <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden border border-[#333] bg-[#161616] sm:h-16 sm:w-16">
                                             {item.image ? (
                                                 // eslint-disable-next-line @next/next/no-img-element
@@ -308,7 +299,6 @@ export default function MainCart({ list = [], setList, loading = false, error = 
                                             )}
                                         </div>
 
-                                        {/* Nome + SKU */}
                                         <div className="min-w-0 sm:flex-1">
                                             <p className="line-clamp-2 break-words text-sm font-medium uppercase tracking-wide text-[#eaeaea] sm:truncate">
                                                 {item.name}
@@ -318,15 +308,14 @@ export default function MainCart({ list = [], setList, loading = false, error = 
                                             </p>
                                         </div>
 
-                                        {/* Quantidade + Preço + Remover (linha própria no mobile) */}
                                         <div className="col-span-3 flex flex-wrap items-center justify-between gap-3 border-t border-[#333] pt-3 sm:col-span-1 sm:contents sm:border-0 sm:pt-0">
-                                            {/* Quantidade */}
                                             <div className="flex shrink-0 items-center">
                                                 <button
                                                     type="button"
                                                     onClick={() => handleDecrease(item)}
+                                                    disabled={item.quantity <= 1 || updatingId === item.id || isPending}
                                                     aria-label={`Diminuir quantidade de ${item.name}`}
-                                                    className="flex h-9 w-9 cursor-pointer items-center justify-center border border-[#333] text-neutral-400 transition hover:border-[#ff6a00] hover:text-[#ff6a00]"
+                                                    className="flex h-9 w-9 cursor-pointer items-center justify-center border border-[#333] text-neutral-400 transition hover:border-[#ff6a00] hover:text-[#ff6a00] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[#333] disabled:hover:text-neutral-400"
                                                 >
                                                     <Minus size={14} />
                                                 </button>
@@ -344,12 +333,10 @@ export default function MainCart({ list = [], setList, loading = false, error = 
                                                 </button>
                                             </div>
 
-                                            {/* Preço */}
                                             <span className="shrink-0 text-sm font-medium tracking-wide text-[#ff6a00] sm:min-w-24 sm:text-right">
                                                 {formatPrice(Number(item.price) * item.quantity)}
                                             </span>
 
-                                            {/* Remover / Cancelar */}
                                             {isPending ? (
                                                 <button
                                                     type="button"
@@ -372,14 +359,12 @@ export default function MainCart({ list = [], setList, loading = false, error = 
                                             )}
                                         </div>
 
-                                        {/* Barra de contagem */}
                                         {isPending && <CountdownBar duration={REMOVE_DELAY} />}
                                     </li>
                                 )
                             })}
                         </ul>
 
-                        {/* Resumo */}
                         <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-[#333] pt-4">
                             <div className="flex flex-col">
                                 <span className="text-[11px] uppercase tracking-widest text-neutral-400 sm:text-xs">
