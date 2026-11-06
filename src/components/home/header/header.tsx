@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation'
 import ReadMe, { UserResponse } from '@/src/actions/me/readMe'
 import ReadCart, { CartResponse } from '@/src/actions/cart/read_all'
 
-interface HeaderHomeProps {
-    // Muda toda vez que o carrinho é alterado; faz o header buscar o carrinho de novo
+interface HeaderHomeProps {   // Muda toda vez que o carrinho é alterado; faz o header buscar o carrinho de novo
     refreshKey?: number
 }
 
@@ -38,6 +37,7 @@ export default function HeaderHome({ refreshKey = 0 }: HeaderHomeProps) {
                 if (!cancelled) setCart(res)
             })
             .catch((err) => {
+                if (!cancelled) setCart(null)
                 console.log('erro ao carregar carrinho', err)
             })
 
@@ -83,7 +83,7 @@ export default function HeaderHome({ refreshKey = 0 }: HeaderHomeProps) {
         <header className="sticky top-0 z-20 border-b border-[#333] bg-[#161616] font-inter text-[#eaeaea]">
             <div className="mx-auto flex max-w-[1120px] flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3 sm:px-6 md:flex-nowrap md:gap-8">
 
-               
+
                 <a
                     href="/"
                     className="font-['Barlow_Condensed',Impact,sans-serif] text-2xl font-extrabold uppercase tracking-wide sm:text-[26px]"
@@ -221,7 +221,7 @@ export default function HeaderHome({ refreshKey = 0 }: HeaderHomeProps) {
                             onClick={() => setMenuOpen(false)}
                             className="border-b border-[#333] py-3 hover:text-[#ff6a00]"
                         >
-                           Inicio
+                            Inicio
                         </a>
 
                         {user ? (

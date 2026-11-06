@@ -1,6 +1,6 @@
 'use client'
 
-import LoginService from "@/src/actions/login/login_request"
+import LoginService from "@/src/actions/auth/login_request"
 import Link from "next/link"
 import { Eye, EyeOff } from "lucide-react"
 import { useState } from "react"

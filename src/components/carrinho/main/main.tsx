@@ -37,9 +37,10 @@ interface MainCartProps {
     setList: Dispatch<SetStateAction<CartResponse | null>>
     loading?: boolean
     error?: string
+    setCartRefresh: Dispatch<SetStateAction<number>>
 }
 
-export default function MainCart({ list = [], setList, loading = false, error = "" }: MainCartProps) {
+export default function MainCart({ list = [], setList, loading = false, error = "", setCartRefresh }: MainCartProps) {
     const items = list
     const selectedItems = items.filter((i) => i.isSelect)
     const allSelected = items.length > 0 && selectedItems.length === items.length
@@ -195,14 +196,22 @@ export default function MainCart({ list = [], setList, loading = false, error = 
 
         try {
             await RemoveProductCart(item.id)
+            setCartRefresh((v) => v - 1)
         } catch (err) {
-            console.log('erro ao remover item: ' + err)
-            updateList((prev) => {
-                if (prev.some((i) => i.id === item.id)) return prev
-                const next = [...prev]
-                next.splice(Math.min(index, next.length), 0, item)
-                return next
-            })
+
+            if (err instanceof Error && err.message === "204") {
+                setCartRefresh((v) => v + 1)
+            } else {
+                console.log('erro ao remover item: ' + err)
+                updateList((prev) => {
+                    if (prev.some((i) => i.id === item.id)) return prev
+                    const next = [...prev]
+                    next.splice(Math.min(index, next.length), 0, item)
+                    return next
+                })
+            }
+
+
         }
     }
 

@@ -54,11 +54,13 @@ export default function SignUpPage() {
 
         setLoading(true)
         try {
-            await SignService(email, password, name)
-            router.push("/login")
+            await SignService(email.trim(), password, name.trim())
+            router.push(`/verificar-email?email=${encodeURIComponent(email.trim())}`)
         } catch (err) {
-            if (err instanceof Error && err.message === "CONFLICT") {
-                setEmailError("This email is already registered.")
+            if (err instanceof Error && err.message === "RATE_LIMIT") {
+                setFormError("Too many attempts. Please wait a few minutes and try again.")
+            } else if (err instanceof Error && err.message === "INVALID_DATA") {
+                setFormError("Please check your details and try again.")
             } else {
                 setFormError("Something went wrong. Please try again.")
             }
@@ -77,7 +79,7 @@ export default function SignUpPage() {
             {/* Painel lateral da marca */}
             <section className="hidden lg:flex flex-col justify-between p-12 text-[#eaeaea] bg-[#161616] border-r border-[#333] relative overflow-hidden">
                 <div className="absolute inset-0 bg-[radial-gradient(#333_1px,transparent_1px)] [background-size:16px_16px] opacity-30" />
-                
+
                 <span className="font-['Barlow_Condensed',Impact,sans-serif] text-2xl font-bold uppercase tracking-wider text-[#ff6a00] z-10">
                     STORE // REGISTER
                 </span>

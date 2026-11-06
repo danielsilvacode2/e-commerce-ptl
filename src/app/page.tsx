@@ -56,6 +56,9 @@ export default function StorePage() {
     loadProducts()
   }, [loadProducts])
 
+
+  
+
   function handlePageChange(newPage: number) {
     setPage(newPage)
     document.getElementById('produtos')?.scrollIntoView({ behavior: 'smooth', block: 'start' })

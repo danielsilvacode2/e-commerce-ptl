@@ -12,6 +12,11 @@ export default async function RemoveProductCart(id: string) {
         },
     })
 
+    if (res.status === 204) {
+        throw new Error("204")
+        return
+    }
+
     if (!res.ok) {
         throw new Error("Erro ao deletar produto")
     }

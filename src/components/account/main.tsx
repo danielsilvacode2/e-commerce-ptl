@@ -4,6 +4,7 @@
 'use client'
 
 import ReadMe, { UserResponse } from "@/src/actions/me/readMe" // ajuste o caminho do seu ReadMe
+import LogoutService from "@/src/actions/auth/logout"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
@@ -45,6 +46,7 @@ export default function MainAccount() {
                 setUser(data)
             } catch {
                 if (active) setError("Não foi possível carregar os dados da conta. Tente novamente.")
+                    router.push("/login")
             } finally {
                 if (active) setLoading(false)
             }
@@ -55,6 +57,18 @@ export default function MainAccount() {
             active = false
         }
     }, [router])
+
+
+    async function handlerLogout(){
+        try{
+            await LogoutService()
+        }catch(err){
+            console.log("erro ao sair da conta")
+        }finally{
+            router.push("/login")
+        }
+       
+    }
 
     return (
         <main className="min-h-screen w-full grid lg:grid-cols-[1.1fr_1fr] bg-[#121212] font-inter text-[#eaeaea]">
@@ -122,12 +136,12 @@ export default function MainAccount() {
                                 <Field label="ID" value={user.Id} mono />
                             </dl>
 
-                            <Link
-                                href="/"
-                                className="mt-6 flex h-11 items-center justify-center rounded-none bg-[#ff6a00] text-xs font-medium uppercase tracking-widest text-[#161616] transition hover:brightness-110 active:brightness-95"
+                            <button
+                                onClick={handlerLogout}
+                                className="mt-6 cursor-pointer flex h-11 p-2 items-center justify-center rounded-none bg-[#ff6a00] text-xs font-medium uppercase tracking-widest text-[#161616] transition hover:brightness-110 active:brightness-95"
                             >
-                                Voltar ao início
-                            </Link>
+                                Sair da conta
+                            </button>
                         </>
                     )}
                 </div>

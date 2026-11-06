@@ -9,6 +9,7 @@ export default function CartPage() {
     const [cart, setCart] = useState<CartResponse | null>(null)
     const [loading, setLoading] = useState<boolean>(true)
     const [error, setError] = useState<string>("")
+    const [cartRefresh, setCartRefresh] = useState <number>(1)
 
     useEffect(() => {
         let cancelled = false
@@ -33,12 +34,13 @@ export default function CartPage() {
 
     return (
         <div>
-            <HeaderHome />
+            <HeaderHome refreshKey={cartRefresh} />
             <MainCart
                 list={cart?.list}
                 setList={setCart}
                 loading={loading}
                 error={error}
+                setCartRefresh={setCartRefresh}
             />
         </div>
 
