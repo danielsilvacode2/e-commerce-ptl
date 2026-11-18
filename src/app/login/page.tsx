@@ -2,19 +2,22 @@
 
 import LoginService from "@/src/actions/auth/login_request"
 import Link from "next/link"
-import { Eye, EyeOff } from "lucide-react"
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { CheckCircle2, Eye, EyeOff } from "lucide-react"
+import { Suspense, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 
-export default function LoginPage() {
+function LoginFormContent() {
     const router = useRouter()
+    const searchParams = useSearchParams()
+    const isResetSuccess = searchParams.get("reset") === "success"
+
     const [email, setEmail] = useState<string>("")
     const [password, setPassword] = useState<string>("")
+    const [loading, setLoading] = useState<boolean>(false)
 
     const [showPassword, setShowPassword] = useState<boolean>(false)
     const [emailError, setEmailError] = useState<string>("")
     const [passwordError, setPasswordError] = useState<string>("")
-
     const [errLogin, setErrLogin] = useState<string>("")
 
     function validateEmail(value: string): string {
@@ -37,18 +40,21 @@ export default function LoginPage() {
 
         setEmailError(emailMsg)
         setPasswordError(passwordMsg)
+        setErrLogin("")
 
         if (emailMsg || passwordMsg) return
 
+        setLoading(true)
         try {
             await LoginService(email.trim(), password)
             router.push("/")
-        } catch (err) {
-                setErrLogin("Senha ou e-mail inválido")
+        } catch {
+            setErrLogin("Senha ou e-mail inválido")
+        } finally {
+            setLoading(false)
         }
     }
 
-   
     const inputBase =
         "h-11 w-full rounded-none border bg-[#1c1c1c] px-3.5 text-sm text-[#eaeaea] placeholder:text-neutral-500 outline-none transition font-inter"
     const inputOk = "border-[#333] focus:border-[#ff6a00] focus:ring-1 focus:ring-[#ff6a00]"
@@ -56,10 +62,10 @@ export default function LoginPage() {
 
     return (
         <main className="min-h-screen w-full grid lg:grid-cols-[1.1fr_1fr] bg-[#121212] font-inter text-[#eaeaea]">
-            {/* Painel lateral da marca (substituído por visual industrial neutro) */}
+            {/* Painel lateral da marca */}
             <section className="hidden lg:flex flex-col justify-between p-12 text-[#eaeaea] bg-[#161616] border-r border-[#333] relative overflow-hidden">
                 <div className="absolute inset-0 bg-[radial-gradient(#333_1px,transparent_1px)] [background-size:16px_16px] opacity-30" />
-                
+
                 <span className="font-['Barlow_Condensed',Impact,sans-serif] text-2xl font-bold uppercase tracking-wider text-[#ff6a00] z-10">
                     STORE // ACCESS
                 </span>
@@ -88,6 +94,18 @@ export default function LoginPage() {
                         Insira suas credenciais para continuar.
                     </p>
 
+                    {isResetSuccess && (
+                        <div
+                            role="status"
+                            className="mt-4 flex items-center gap-2 border border-[#ff6a00]/60 bg-[#161616] p-3 text-xs text-[#eaeaea]"
+                        >
+                            <CheckCircle2 size={16} className="shrink-0 text-[#ff6a00]" />
+                            <span className="text-[11px] uppercase tracking-wider text-[#ff6a00]">
+                                Senha redefinida com sucesso! Entre com sua nova senha.
+                            </span>
+                        </div>
+                    )}
+
                     <form
                         className="mt-6 flex flex-col gap-5"
                         noValidate
@@ -106,6 +124,7 @@ export default function LoginPage() {
                                 type="email"
                                 placeholder="you@company.com"
                                 autoComplete="email"
+                                disabled={loading}
                                 className={`${inputBase} ${emailError ? inputInvalid : inputOk}`}
                                 value={email}
                                 aria-invalid={!!emailError}
@@ -132,12 +151,12 @@ export default function LoginPage() {
                                 >
                                     Senha
                                 </label>
-                                <a
-                                    href="#"
+                                <Link
+                                    href="/esqueceu-senha"
                                     className="text-xs uppercase tracking-wider text-neutral-400 hover:text-[#ff6a00] transition"
                                 >
                                     Esqueceu sua senha?
-                                </a>
+                                </Link>
                             </div>
 
                             <div className="relative">
@@ -146,6 +165,7 @@ export default function LoginPage() {
                                     type={showPassword ? "text" : "password"}
                                     placeholder="••••••••"
                                     autoComplete="current-password"
+                                    disabled={loading}
                                     className={`${inputBase} pr-11 ${passwordError ? inputInvalid : inputOk}`}
                                     value={password}
                                     aria-invalid={!!passwordError}
@@ -173,9 +193,10 @@ export default function LoginPage() {
 
                         <button
                             type="submit"
-                            className="mt-2 h-11 rounded-none bg-[#ff6a00] text-xs font-medium uppercase tracking-widest text-[#161616] transition hover:brightness-110 active:brightness-95 cursor-pointer"
+                            disabled={loading}
+                            className="mt-2 h-11 rounded-none bg-[#ff6a00] text-xs font-medium uppercase tracking-widest text-[#161616] transition hover:brightness-110 active:brightness-95 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                         >
-                            Entrar
+                            {loading ? "Entrando..." : "Entrar"}
                         </button>
                     </form>
 
@@ -197,5 +218,13 @@ export default function LoginPage() {
                 </div>
             </section>
         </main>
+    )
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-[#121212]" />}>
+            <LoginFormContent />
+        </Suspense>
     )
 }

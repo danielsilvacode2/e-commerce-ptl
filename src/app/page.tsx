@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import ProductReadAllService, { ProductResponse } from '@/src/actions/product/read_all_request'
+import ReadCart, { CartResponse } from '@/src/actions/cart/read_all'
 import HeroHome from '../components/home/hero/hero'
 import HeaderHome from '../components/home/header/header'
 import ArticleHome from '../components/home/article/article'
@@ -30,9 +31,23 @@ export default function StorePage() {
 
   // Sobe +1 a cada mudança no carrinho; o header observa esse valor
   const [cartVersion, setCartVersion] = useState(0)
+  const [cart, setCart] = useState<CartResponse | null>(null)
 
   // Evita que uma resposta antiga sobrescreva uma mais nova
   const requestId = useRef(0)
+
+  const loadCart = useCallback(async () => {
+    try {
+      const res = await ReadCart()
+      setCart(res)
+    } catch {
+      setCart(null)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadCart()
+  }, [loadCart, cartVersion])
 
   const loadProducts = useCallback(async (silent = false) => {
     const id = ++requestId.current
@@ -66,6 +81,7 @@ export default function StorePage() {
 
   function handleCartChange() {
     loadProducts(true)             // atualiza o estoque dos produtos
+    loadCart()                     // atualiza o carrinho
     setCartVersion((v) => v + 1)   // faz o header buscar o carrinho de novo
   }
 
@@ -83,6 +99,7 @@ export default function StorePage() {
         totalPages={totalPages}
         onPageChange={handlePageChange}
         onCartChange={handleCartChange}
+        cart={cart}
       />
     </div>
   )

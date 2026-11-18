@@ -1,9 +1,20 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import ReadMe, { UserResponse } from '@/src/actions/me/readMe'
 import ReadCart, { CartResponse } from '@/src/actions/cart/read_all'
+
+function SearchIcon() {
+    return (
+        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor"
+            strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="6.5" />
+            <path d="M20 20l-4-4" />
+        </svg>
+    )
+}
 
 interface HeaderHomeProps {   // Muda toda vez que o carrinho é alterado; faz o header buscar o carrinho de novo
     refreshKey?: number
@@ -34,7 +45,9 @@ export default function HeaderHome({ refreshKey = 0 }: HeaderHomeProps) {
 
         ReadCart()
             .then((res) => {
-                if (!cancelled) setCart(res)
+                if (!cancelled) {
+                    setCart(res)
+                }
             })
             .catch((err) => {
                 if (!cancelled) setCart(null)
@@ -69,27 +82,17 @@ export default function HeaderHome({ refreshKey = 0 }: HeaderHomeProps) {
 
 
 
-    function SearchIcon() {
-        return (
-            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor"
-                strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="6.5" />
-                <path d="M20 20l-4-4" />
-            </svg>
-        )
-    }
-
     return (
         <header className="sticky top-0 z-20 border-b border-[#333] bg-[#161616] font-inter text-[#eaeaea]">
             <div className="mx-auto flex max-w-[1120px] flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3 sm:px-6 md:flex-nowrap md:gap-8">
 
 
-                <a
+                <Link
                     href="/"
                     className="font-['Barlow_Condensed',Impact,sans-serif] text-2xl font-extrabold uppercase tracking-wide sm:text-[26px]"
                 >
                     <span className="mr-1 bg-[#ff6a00] px-1.5 text-[#161616]">N</span>ero
-                </a>
+                </Link>
 
                 {/* Busca */}
                 <div className="relative order-last w-full md:order-none md:w-auto md:flex-1">
@@ -109,9 +112,9 @@ export default function HeaderHome({ refreshKey = 0 }: HeaderHomeProps) {
 
                     {/* ===== LINKS DESKTOP (somem no mobile) ===== */}
                     <div className="hidden items-center gap-8 md:flex">
-                        <a href="/" className="hover:text-[#ff6a00]">
+                        <Link href="/" className="hover:text-[#ff6a00]">
                             Inicio
-                        </a>
+                        </Link>
 
                         {user ? (
                             <a
@@ -168,7 +171,8 @@ export default function HeaderHome({ refreshKey = 0 }: HeaderHomeProps) {
                     <button
                         type="button"
                         onClick={handlerCart}
-                        className="flex h-10 cursor-pointer items-center gap-2 rounded-none border border-[#333] px-3 uppercase tracking-wider transition-colors hover:bg-[#ff6a00] hover:text-[#161616] sm:px-4 md:h-11"
+                        aria-label={`Carrinho com ${cart?.list.length ?? 0} itens`}
+                        className="flex h-10 cursor-pointer items-center gap-2 rounded-none border border-[#333] px-3 uppercase tracking-wider text-[#eaeaea] transition-colors hover:bg-[#ff6a00] hover:text-[#161616] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#ff6a00] sm:px-4 md:h-11"
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -216,13 +220,13 @@ export default function HeaderHome({ refreshKey = 0 }: HeaderHomeProps) {
                 <div className="border-t border-[#333] bg-[#161616] md:hidden">
                     <div className="mx-auto flex max-w-[1120px] flex-col px-4 py-2 text-[13px] font-medium uppercase tracking-wider sm:px-6">
 
-                        <a
+                        <Link
                             href="/"
                             onClick={() => setMenuOpen(false)}
                             className="border-b border-[#333] py-3 hover:text-[#ff6a00]"
                         >
                             Inicio
-                        </a>
+                        </Link>
 
                         {user ? (
                             <a
