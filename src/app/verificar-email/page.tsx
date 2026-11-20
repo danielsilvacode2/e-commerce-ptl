@@ -1,8 +1,13 @@
 import VerifyEmailMain from '@/src/components/verify-email/main'
 
+export const metadata = {
+    title: 'Verificar E-mail | SHOP.CO',
+    description: 'Confirme o código enviado para o seu endereço de e-mail.',
+}
+
 export default function VerifyEmailPage() {
     return (
-        <div className="min-h-screen overflow-x-clip bg-[#161616] text-slate-900">
+        <div className="min-h-screen bg-white text-black font-sans">
             <VerifyEmailMain />
         </div>
     )

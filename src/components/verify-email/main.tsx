@@ -2,15 +2,14 @@
 
 import { ClipboardEvent, KeyboardEvent, Suspense, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Lock, MailCheck } from 'lucide-react'
+import Link from 'next/link'
+import { Lock, MailCheck, ArrowRight } from 'lucide-react'
 import VerifyEmailCodeService from '@/src/actions/auth/verify_email_code'
-// TODO: implemente esse service quando o endpoint de reenvio estiver pronto
-// import ResendEmailCodeService from '@/src/actions/users/resend_email_code'
 
 const CODE_LENGTH = 6
-const RESEND_COOLDOWN = 60 // segundos
-const MAX_ATTEMPTS = 5 // tentativas erradas antes do bloqueio
-const BASE_LOCK = 30 // segundos; dobra a cada novo bloqueio
+const RESEND_COOLDOWN = 60
+const MAX_ATTEMPTS = 5
+const BASE_LOCK = 30
 const MAX_LOCK = 300
 
 const formatTime = (s: number) =>
@@ -39,7 +38,6 @@ function VerifyEmailContent() {
     const code = digits.join('')
     const isComplete = code.length === CODE_LENGTH && digits.every(Boolean)
     const isLocked = lockSeconds > 0
-    const attemptsLeft = MAX_ATTEMPTS - attempts
 
     useEffect(() => {
         inputsRef.current[0]?.focus()
@@ -57,7 +55,6 @@ function VerifyEmailContent() {
         return () => clearTimeout(t)
     }, [lockSeconds])
 
-    // quando o bloqueio termina, devolve o foco ao primeiro campo
     useEffect(() => {
         if (!isLocked && lockTotal > 0) {
             setLockTotal(0)
@@ -82,7 +79,6 @@ function VerifyEmailContent() {
         const onlyDigits = value.replace(/\D/g, '')
         if (!onlyDigits) return
 
-        // se vier mais de um dígito (autofill), distribui nos campos seguintes
         const next = [...digits]
         onlyDigits.slice(0, CODE_LENGTH - index).split('').forEach((d, i) => {
             next[index + i] = d
@@ -145,7 +141,6 @@ function VerifyEmailContent() {
             const message = err instanceof Error ? err.message : ''
 
             if (message.startsWith('429')) {
-                // servidor bloqueou: usa o Retry-After se vier ("429:45")
                 const retry = Number(message.split(':')[1]) || BASE_LOCK
                 startLock(retry)
             } else {
@@ -159,8 +154,8 @@ function VerifyEmailContent() {
                     const left = MAX_ATTEMPTS - next
                     setError(
                         left <= 2
-                            ? `Código inválido. Restam ${left} ${left === 1 ? 'tentativa' : 'tentativas'}.`
-                            : 'Código inválido ou expirado. Confira e tente novamente.'
+                            ? `Código inválido. Restam ${left} tentativas.`
+                            : 'Código inválido ou expirado. Tente novamente.'
                     )
                     setDigits(Array(CODE_LENGTH).fill(''))
                     focusInput(0)
@@ -179,7 +174,6 @@ function VerifyEmailContent() {
         setInfo('')
 
         try {
-            // await ResendEmailCodeService(email)
             setInfo('Enviamos um novo código para o seu e-mail.')
             setCooldown(RESEND_COOLDOWN)
         } catch (err) {
@@ -191,21 +185,24 @@ function VerifyEmailContent() {
     }
 
     return (
-        <main className="flex min-h-screen w-full items-center justify-center bg-[#121212] px-4 py-6 font-inter text-[#eaeaea] sm:px-6 sm:py-10">
+        <main className="flex min-h-screen w-full items-center justify-center bg-white px-4 py-12 font-sans text-black">
             <div className="w-full max-w-md">
-                <header className="border-b border-[#333] pb-4">
-                    <h1 className="font-['Barlow_Condensed',Impact,sans-serif] text-2xl font-bold uppercase tracking-wide text-[#eaeaea] sm:text-3xl">
-                        Verificar e-mail
+                <div className="mb-6 text-center">
+                    <Link href="/" className="font-display text-3xl font-extrabold uppercase tracking-tight text-black inline-block mb-4">
+                        SHOP.CO
+                    </Link>
+                    <h1 className="font-display text-3xl font-extrabold uppercase tracking-tight text-black">
+                        VERIFICAR E-MAIL
                     </h1>
-                    <p className="mt-1 text-[11px] uppercase tracking-wider text-neutral-400 sm:text-xs">
+                    <p className="mt-2 text-sm text-neutral-600 font-sans">
                         Digite o código de {CODE_LENGTH} dígitos enviado para
                     </p>
-                    <p className="mt-1 break-all text-sm font-medium tracking-wide text-[#ff6a00]">
+                    <p className="mt-1 font-bold text-black font-sans break-all">
                         {email || 'seu e-mail'}
                     </p>
-                </header>
+                </div>
 
-                <div className="mt-6 border border-[#333] bg-[#1c1c1c] p-4 sm:p-6">
+                <div className="rounded-3xl border border-black/10 bg-white p-6 sm:p-8 shadow-sm">
                     <div className="flex items-center justify-between gap-2">
                         {digits.map((digit, i) => (
                             <input
@@ -224,12 +221,9 @@ function VerifyEmailContent() {
                                 onKeyDown={(e) => handleKeyDown(i, e)}
                                 onPaste={handlePaste}
                                 onFocus={(e) => e.target.select()}
-                                className={`h-12 w-full min-w-0 border bg-[#161616] text-center text-lg font-medium text-[#eaeaea] outline-none transition focus:border-[#ff6a00] disabled:cursor-not-allowed disabled:opacity-40 sm:h-14 sm:text-xl ${error
-                                    ? 'border-red-500'
-                                    : digit
-                                        ? 'border-[#ff6a00]/60'
-                                        : 'border-[#333]'
-                                    }`}
+                                className={`h-12 w-full rounded-2xl border bg-[#F2F0F1] text-center text-lg font-bold text-black outline-none transition focus:border-black/30 focus:bg-white disabled:opacity-40 ${
+                                    error ? 'border-red-500 bg-red-50' : 'border-transparent'
+                                }`}
                             />
                         ))}
                     </div>
@@ -237,37 +231,28 @@ function VerifyEmailContent() {
                     {isLocked && (
                         <div
                             role="alert"
-                            className="relative mt-4 overflow-hidden border border-[#ff6a00]/60 bg-[#161616] p-3"
+                            className="relative mt-4 overflow-hidden rounded-2xl bg-amber-50 border border-amber-200 p-4"
                         >
                             <div className="flex items-start gap-3">
-                                <Lock size={18} className="mt-0.5 shrink-0 text-[#ff6a00]" />
-                                <div className="min-w-0">
-                                    <p className="text-sm font-medium tracking-wide text-[#eaeaea]">
-                                        Muitas tentativas. Aguarde um instante.
+                                <Lock size={18} className="mt-0.5 shrink-0 text-amber-600" />
+                                <div className="min-w-0 text-xs text-amber-800">
+                                    <p className="font-bold">
+                                        Muitas tentativas incorretas.
                                     </p>
-                                    <p className="mt-1 text-xs tracking-wide text-neutral-400">
-                                        Por segurança, bloqueamos novas tentativas por um tempo. Você poderá tentar de novo em{' '}
-                                        <span className="font-medium tabular-nums text-[#ff6a00]">
-                                            {formatTime(lockSeconds)}
-                                        </span>
-                                        .
+                                    <p className="mt-1">
+                                        Aguarde <span className="font-bold">{formatTime(lockSeconds)}</span> para tentar novamente.
                                     </p>
                                 </div>
                             </div>
-                            <span
-                                aria-hidden
-                                className="absolute bottom-0 left-0 h-0.5 bg-[#ff6a00] ease-linear transition-[width] duration-1000"
-                                style={{ width: `${lockTotal ? (lockSeconds / lockTotal) * 100 : 0}%` }}
-                            />
                         </div>
                     )}
 
-                    <div className="mt-3 min-h-5" aria-live="polite">
-                        {!isLocked && error && <p className="text-xs tracking-wide text-red-500">{error}</p>}
-                        {!isLocked && !error && info && <p className="text-xs tracking-wide text-neutral-400">{info}</p>}
+                    <div className="mt-4 min-h-5 text-center text-xs font-medium" aria-live="polite">
+                        {!isLocked && error && <p className="text-red-600">{error}</p>}
+                        {!isLocked && !error && info && <p className="text-neutral-600">{info}</p>}
                         {success && (
-                            <p className="flex items-center gap-2 text-xs tracking-wide text-[#ff6a00]">
-                                <MailCheck size={14} />
+                            <p className="flex items-center justify-center gap-1.5 text-emerald-600 font-bold">
+                                <MailCheck size={16} />
                                 E-mail verificado! Redirecionando...
                             </p>
                         )}
@@ -277,19 +262,19 @@ function VerifyEmailContent() {
                         type="button"
                         onClick={handleSubmit}
                         disabled={!isComplete || loading || success || isLocked}
-                        className="mt-4 h-10 w-full cursor-pointer border border-[#ff6a00] bg-[#ff6a00] px-6 text-xs font-medium uppercase tracking-widest text-[#121212] transition hover:bg-transparent hover:text-[#ff6a00] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-[#ff6a00] disabled:hover:text-[#121212]"
+                        className="mt-6 h-12 w-full rounded-full bg-black text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
-                        {loading ? 'Verificando...' : isLocked ? `Aguarde ${formatTime(lockSeconds)}` : 'Verificar conta'}
+                        {loading ? 'Verificando...' : isLocked ? `Aguarde ${formatTime(lockSeconds)}` : 'Confirmar e Ativar Conta'} <ArrowRight size={16} />
                     </button>
                 </div>
 
-                <div className="mt-4 flex items-center justify-between gap-3 text-[11px] uppercase tracking-widest sm:text-xs">
-                    <span className="text-neutral-500">Não recebeu o código?</span>
+                <div className="mt-6 flex items-center justify-between text-xs text-neutral-600 px-2 font-medium">
+                    <span>Não recebeu o código?</span>
                     <button
                         type="button"
                         onClick={handleResend}
                         disabled={cooldown > 0 || resending || success}
-                        className="cursor-pointer text-neutral-400 transition hover:text-[#ff6a00] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:text-neutral-400"
+                        className="font-bold text-black hover:underline disabled:opacity-40 cursor-pointer"
                     >
                         {resending ? 'Enviando...' : cooldown > 0 ? `Reenviar em ${cooldown}s` : 'Reenviar código'}
                     </button>
@@ -299,10 +284,9 @@ function VerifyEmailContent() {
     )
 }
 
-// useSearchParams exige Suspense no build do Next
 export default function VerifyEmailMain() {
     return (
-        <Suspense fallback={<div className="min-h-screen bg-[#121212]" />}>
+        <Suspense fallback={<div className="min-h-screen bg-white" />}>
             <VerifyEmailContent />
         </Suspense>
     )

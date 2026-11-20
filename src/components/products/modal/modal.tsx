@@ -12,13 +12,10 @@ interface Props {
 }
 
 const inputClass =
-    'w-full border border-[#333] bg-[#161616] px-3 py-2 text-sm text-[#eaeaea] outline-none transition placeholder:text-neutral-600 focus:border-[#ff6a00]'
-const labelClass = 'mb-1 block text-[11px] uppercase tracking-widest text-neutral-400'
+    'h-11 w-full rounded-full border border-black/15 bg-white px-4 text-xs font-sans text-black outline-none transition placeholder:text-neutral-400 focus:border-black'
+const labelClass = 'mb-1.5 block text-xs uppercase tracking-wider text-black font-bold'
 
 export default function EditProductModal({ product, onClose, onSaved }: Props) {
-
-
-
     const [form, setForm] = useState({
         name: product.name ?? '',
         sku: product.sku ?? '',
@@ -31,7 +28,6 @@ export default function EditProductModal({ product, onClose, onSaved }: Props) {
     const [error, setError] = useState('')
     const [errConflit, setConflitErr] = useState<string>("")
 
-    // Fecha com ESC
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !saving && onClose()
         window.addEventListener('keydown', onKey)
@@ -47,6 +43,7 @@ export default function EditProductModal({ product, onClose, onSaved }: Props) {
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
         setError('')
+        setConflitErr('')
 
         const price = Number(form.price.replace(',', '.'))
         const quantity = parseInt(form.quantity, 10)
@@ -67,28 +64,19 @@ export default function EditProductModal({ product, onClose, onSaved }: Props) {
 
         try {
             setSaving(true)
-
-            // Agora envia os valores editados (data), não os antigos de product
             const updated = await UpdateProductById({
                 Id: product.id,
                 ...data,
             })
-
-            // Se a API não devolver o produto, mescla com o que foi enviado
             onSaved({ ...product, ...data, ...(updated ?? {}) } as ProductResponse)
             onClose()
         } catch (err) {
             console.error(err)
-
             if (err instanceof Error && err.message === "409") {
-                setConflitErr("Esse produto ja esta cadastrado")
+                setConflitErr("Esse produto já está cadastrado com este SKU.")
             } else {
                 setError(err instanceof Error ? err.message : 'Erro ao atualizar produto.')
             }
-
-
-
-
         } finally {
             setSaving(false)
         }
@@ -96,7 +84,7 @@ export default function EditProductModal({ product, onClose, onSaved }: Props) {
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
             onClick={() => !saving && onClose()}
         >
             <div
@@ -104,24 +92,23 @@ export default function EditProductModal({ product, onClose, onSaved }: Props) {
                 aria-modal="true"
                 aria-label="Editar produto"
                 onClick={(e) => e.stopPropagation()}
-                className="max-h-[90vh] w-full max-w-md overflow-y-auto border border-[#ff6a00] bg-[#1c1c1c] shadow-lg"
+                className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-3xl border border-black/10 bg-white p-6 sm:p-8 shadow-2xl"
             >
-                <div className="flex items-center justify-between border-b border-[#333] px-4 py-3">
-                    <h2 className="font-['Barlow_Condensed',Impact,sans-serif] text-xl font-bold uppercase tracking-wide">
-                        Editar produto
+                <div className="flex items-center justify-between pb-4 border-b border-black/10">
+                    <h2 className="font-display text-xl font-bold uppercase tracking-tight text-black">
+                        Editar Produto
                     </h2>
                     <button
                         type="button"
                         onClick={onClose}
                         disabled={saving}
-                        aria-label="Fechar"
-                        className="flex h-8 w-8 cursor-pointer items-center justify-center border border-[#333] text-neutral-400 transition hover:border-red-500 hover:text-red-500 disabled:opacity-40"
+                        className="p-1 rounded-full hover:bg-[#F2F0F1] text-black transition-colors"
                     >
-                        <X size={16} />
+                        <X size={20} />
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="flex flex-col gap-3 p-4">
+                <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
                     <div>
                         <label htmlFor="name" className={labelClass}>Nome</label>
                         <input id="name" name="name" value={form.name} onChange={handleChange} className={inputClass} />
@@ -132,9 +119,9 @@ export default function EditProductModal({ product, onClose, onSaved }: Props) {
                         <input id="sku" name="sku" value={form.sku} onChange={handleChange} className={inputClass} />
                     </div>
                     {errConflit && (
-                        <span role="alert" className="text-[11px] uppercase tracking-wider text-red-500">
+                        <div role="alert" className="p-3 rounded-2xl bg-red-50 text-xs text-red-600 font-medium">
                             {errConflit}
-                        </span>
+                        </div>
                     )}
 
                     <div>
@@ -145,7 +132,7 @@ export default function EditProductModal({ product, onClose, onSaved }: Props) {
                             rows={3}
                             value={form.description}
                             onChange={handleChange}
-                            className={inputClass + ' resize-none'}
+                            className="w-full rounded-2xl border border-black/15 bg-white p-4 text-xs font-sans text-black outline-none transition placeholder:text-neutral-400 focus:border-black resize-none"
                         />
                     </div>
 
@@ -191,26 +178,26 @@ export default function EditProductModal({ product, onClose, onSaved }: Props) {
                     </div>
 
                     {error && (
-                        <span role="alert" className="text-[11px] uppercase tracking-wider text-red-500">
+                        <div role="alert" className="p-3 rounded-2xl bg-red-50 text-xs text-red-600 font-medium">
                             {error}
-                        </span>
+                        </div>
                     )}
 
-                    <div className="mt-1 flex justify-end gap-2">
+                    <div className="mt-4 flex justify-end gap-3 pt-4 border-t border-black/10">
                         <button
                             type="button"
                             onClick={onClose}
                             disabled={saving}
-                            className="cursor-pointer border border-[#333] px-4 py-2 text-xs uppercase tracking-widest text-neutral-400 transition hover:border-neutral-400 disabled:opacity-40"
+                            className="h-11 px-5 rounded-full border border-black/15 text-xs font-semibold uppercase tracking-wider text-black hover:bg-[#F2F0F1] transition-colors"
                         >
                             Cancelar
                         </button>
                         <button
                             type="submit"
                             disabled={saving}
-                            className="cursor-pointer border border-[#ff6a00] bg-[#ff6a00] px-4 py-2 text-xs font-medium uppercase tracking-widest text-[#121212] transition hover:bg-transparent hover:text-[#ff6a00] disabled:cursor-not-allowed disabled:opacity-50"
+                            className="h-11 px-6 rounded-full bg-black text-white text-xs font-semibold uppercase tracking-wider hover:bg-neutral-800 transition-colors disabled:opacity-50"
                         >
-                            {saving ? 'Salvando...' : 'Salvar'}
+                            {saving ? 'Salvando...' : 'Salvar Alterações'}
                         </button>
                     </div>
                 </form>

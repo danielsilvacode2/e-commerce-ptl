@@ -5,284 +5,275 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import ReadMe, { UserResponse } from '@/src/actions/me/readMe'
 import ReadCart, { CartResponse } from '@/src/actions/cart/read_all'
+import { ShoppingBag, Search, Menu, X, ArrowRight } from 'lucide-react'
+import ThemeToggle from '@/src/components/theme/theme-toggle'
 
-function SearchIcon() {
-    return (
-        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor"
-            strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="6.5" />
-            <path d="M20 20l-4-4" />
-        </svg>
-    )
-}
-
-interface HeaderHomeProps {   // Muda toda vez que o carrinho é alterado; faz o header buscar o carrinho de novo
-    refreshKey?: number
+interface HeaderHomeProps {
+  refreshKey?: number
 }
 
 export default function HeaderHome({ refreshKey = 0 }: HeaderHomeProps) {
-    const [search, setSearch] = useState('')
-    const [user, setUser] = useState<UserResponse | null>(null)
-    const [painelAdmin, setPainelAdmin] = useState<boolean>(false)
-    const [menuOpen, setMenuOpen] = useState(false)
-    const [cart, setCart] = useState<CartResponse | null>(null)
+  const [search, setSearch] = useState('')
+  const [user, setUser] = useState<UserResponse | null>(null)
+  const [painelAdmin, setPainelAdmin] = useState<boolean>(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [cart, setCart] = useState<CartResponse | null>(null)
 
-    const router = useRouter()
+  const router = useRouter()
 
-    useEffect(() => {
-        ReadMe()
-            .then((dataUser) => {
-                setUser(dataUser)
-                if (dataUser?.role == "admin") {
-                    setPainelAdmin(true)
-                }
-            })
-    }, [])
+  useEffect(() => {
+    ReadMe().then((dataUser) => {
+      setUser(dataUser)
+      if (dataUser?.role === 'admin') {
+        setPainelAdmin(true)
+      }
+    })
+  }, [])
 
-    // Busca o carrinho no carregamento e sempre que refreshKey mudar
-    useEffect(() => {
-        let cancelled = false
+  useEffect(() => {
+    let cancelled = false
+    ReadCart()
+      .then((res) => {
+        if (!cancelled) setCart(res)
+      })
+      .catch((err) => {
+        if (!cancelled) setCart(null)
+        console.log('erro ao carregar carrinho', err)
+      })
 
-        ReadCart()
-            .then((res) => {
-                if (!cancelled) {
-                    setCart(res)
-                }
-            })
-            .catch((err) => {
-                if (!cancelled) setCart(null)
-                console.log('erro ao carregar carrinho', err)
-            })
-
-        return () => {
-            cancelled = true
-        }
-    }, [refreshKey])
-
-
-    const handlerPainel = () => {
-        router.push("/produtos")
+    return () => {
+      cancelled = true
     }
-    const handlerCart = () => {
-        router.push("/carrinho")
-    }
+  }, [refreshKey])
 
+  const totalCartItems = cart?.list?.reduce((acc, item) => acc + (item.quantity || 1), 0) ?? 0
 
-    const handleAccountClick = () => {
-        router.push("/conta")
-    }
+  return (
+    <>
+      {/* 1. Top Announcement Bar */}
+      <div className="bg-black dark:bg-[#000000] text-white text-xs py-2 px-4 text-center font-sans tracking-wide border-b border-black/10 dark:border-white/10">
+        <div className="mx-auto max-w-7xl flex items-center justify-center gap-2">
+          <span>Cadastre-se e ganhe 20% de desconto no seu primeiro pedido.</span>
+          <Link href="/sign" className="underline font-semibold hover:text-neutral-300 transition-colors inline-flex items-center gap-0.5">
+            Cadastre-se Agora <ArrowRight className="h-3 w-3 inline" />
+          </Link>
+        </div>
+      </div>
 
-    const handlerAccountLogin = () => {
-        router.push("/login")
-    }
+      {/* 2. Navbar */}
+      <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#121212]/95 backdrop-blur-md border-b border-black/10 dark:border-white/10 transition-colors">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-18 sm:h-20 flex items-center justify-between gap-4 md:gap-8">
+          
+          {/* Mobile hamburger + Logo */}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'}
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="p-2 text-black dark:text-white md:hidden hover:opacity-70 transition-opacity"
+            >
+              {menuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
 
-    const handlerAccountSign = () => {
-        router.push("/sign")
-    }
+            <Link
+              href="/"
+              className="font-display font-extrabold text-2xl sm:text-3xl tracking-tight uppercase text-black dark:text-white"
+            >
+              Nero
+            </Link>
+          </div>
 
-
-
-    return (
-        <header className="sticky top-0 z-20 border-b border-[#333] bg-[#161616] font-inter text-[#eaeaea]">
-            <div className="mx-auto flex max-w-[1120px] flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3 sm:px-6 md:flex-nowrap md:gap-8">
-
-
-                <Link
-                    href="/"
-                    className="font-['Barlow_Condensed',Impact,sans-serif] text-2xl font-extrabold uppercase tracking-wide sm:text-[26px]"
-                >
-                    <span className="mr-1 bg-[#ff6a00] px-1.5 text-[#161616]">N</span>ero
-                </Link>
-
-                {/* Busca */}
-                <div className="relative order-last w-full md:order-none md:w-auto md:flex-1">
-                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500">
-                        <SearchIcon />
-                    </span>
-                    <input
-                        type="search"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Buscar produtos"
-                        className="h-10 w-full rounded-none border border-[#333] bg-transparent pl-10 pr-4 text-[13px] uppercase tracking-wider text-[#eaeaea] outline-none placeholder:text-neutral-500 focus:border-[#ff6a00] md:h-11"
-                    />
-                </div>
-
-                <nav className="ml-auto flex items-center gap-4 text-[13px] font-medium uppercase tracking-wider md:ml-0 md:gap-8">
-
-                    {/* ===== LINKS DESKTOP (somem no mobile) ===== */}
-                    <div className="hidden items-center gap-8 md:flex">
-                        <Link href="/" className="hover:text-[#ff6a00]">
-                            Inicio
-                        </Link>
-
-                        {user ? (
-                            <a
-                                href="/account"
-                                onClick={(e) => {
-                                    e.preventDefault()
-                                    handleAccountClick()
-                                }}
-                                className="hover:text-[#ff6a00]"
-                            >
-                                Minha conta
-                            </a>
-                        ) : (
-                            <div className="flex items-center gap-3">
-                                <a
-                                    href="/login"
-                                    onClick={(e) => {
-                                        e.preventDefault()
-                                        handlerAccountLogin()
-                                    }}
-                                    className="font-medium text-neutral-400 transition-colors hover:text-[#ff6a00]"
-                                >
-                                    Login
-                                </a>
-                                <span className="text-[#333]">/</span>
-                                <a
-                                    href="/sign"
-                                    onClick={(e) => {
-                                        e.preventDefault()
-                                        handlerAccountSign()
-                                    }}
-                                    className="font-medium text-neutral-400 transition-colors hover:text-[#ff6a00]"
-                                >
-                                    Sign up
-                                </a>
-                            </div>
-                        )}
-
-                        {painelAdmin && (
-                            <a
-                                href="/produtos"
-                                onClick={(e) => {
-                                    e.preventDefault()
-                                    handlerPainel()
-                                }}
-                                className="hover:text-[#ff6a00]"
-                            >
-                                Painel de admin
-                            </a>
-                        )}
-                    </div>
-
-                    {/* ===== CARRINHO (sempre visível) ===== */}
-                    <button
-                        type="button"
-                        onClick={handlerCart}
-                        aria-label={`Carrinho com ${cart?.list.length ?? 0} itens`}
-                        className="flex h-10 cursor-pointer items-center gap-2 rounded-none border border-[#333] px-3 uppercase tracking-wider text-[#eaeaea] transition-colors hover:bg-[#ff6a00] hover:text-[#161616] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#ff6a00] sm:px-4 md:h-11"
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="h-4 w-4"
-                        >
-                            <circle cx="9" cy="21" r="1" />
-                            <circle cx="20" cy="21" r="1" />
-                            <path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6" />
-                        </svg>
-                        <span className="hidden sm:inline">Carrinho</span>
-                        <span className="flex h-5 min-w-5 items-center justify-center rounded-none bg-[#ff6a00] px-1 text-xs font-semibold text-[#161616]">
-                            {cart?.list.length ?? 0}
-                        </span>
-                    </button>
-
-                    {/* ===== BOTÃO HAMBÚRGUER (só mobile) ===== */}
-                    <button
-                        type="button"
-                        aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'}
-                        aria-expanded={menuOpen}
-                        onClick={() => setMenuOpen((o) => !o)}
-                        className="flex h-10 w-10 items-center justify-center rounded-none border border-[#333] hover:bg-[#ff6a00] hover:text-[#161616] md:hidden"
-                    >
-                        {menuOpen ? (
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-5 w-5">
-                                <path d="M18 6 6 18M6 6l12 12" />
-                            </svg>
-                        ) : (
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-5 w-5">
-                                <path d="M3 6h18M3 12h18M3 18h18" />
-                            </svg>
-                        )}
-                    </button>
-                </nav>
-            </div>
-
-            {/* ===== MENU MOBILE ===== */}
-            {menuOpen && (
-                <div className="border-t border-[#333] bg-[#161616] md:hidden">
-                    <div className="mx-auto flex max-w-[1120px] flex-col px-4 py-2 text-[13px] font-medium uppercase tracking-wider sm:px-6">
-
-                        <Link
-                            href="/"
-                            onClick={() => setMenuOpen(false)}
-                            className="border-b border-[#333] py-3 hover:text-[#ff6a00]"
-                        >
-                            Inicio
-                        </Link>
-
-                        {user ? (
-                            <a
-                                href="/conta"
-                                onClick={(e) => {
-                                    e.preventDefault()
-                                    handleAccountClick()
-                                    setMenuOpen(false)
-                                }}
-                                className="border-b border-[#333] py-3 hover:text-[#ff6a00]"
-                            >
-                                Minha conta
-                            </a>
-                        ) : (
-                            <>
-                                <a
-                                    href="/login"
-                                    onClick={(e) => {
-                                        e.preventDefault()
-                                        handlerAccountLogin()
-                                        setMenuOpen(false)
-                                    }}
-                                    className="border-b border-[#333] py-3 hover:text-[#ff6a00]"
-                                >
-                                    Login
-                                </a>
-                                <a
-                                    href="/sign"
-                                    onClick={(e) => {
-                                        e.preventDefault()
-                                        handlerAccountSign()
-                                        setMenuOpen(false)
-                                    }}
-                                    className="border-b border-[#333] py-3 hover:text-[#ff6a00]"
-                                >
-                                    Sign up
-                                </a>
-                            </>
-                        )}
-
-                        {painelAdmin && (
-                            <a
-                                href="/produtos"
-                                onClick={(e) => {
-                                    e.preventDefault()
-                                    handlerPainel()
-                                    setMenuOpen(false)
-                                }}
-                                className="py-3 hover:text-[#ff6a00]"
-                            >
-                                Painel de produtos
-                            </a>
-                        )}
-                    </div>
-                </div>
+          {/* Desktop Nav Links */}
+          <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-neutral-700 dark:text-neutral-300">
+            <Link href="/" className="hover:text-black dark:hover:text-white transition-colors">
+              Início
+            </Link>
+            <a href="#novidades" className="hover:text-black dark:hover:text-white transition-colors">
+              Novidades
+            </a>
+            <a href="#destaques" className="hover:text-black dark:hover:text-white transition-colors">
+              Mais Vendidos
+            </a>
+            {user && (
+              <Link href="/pedidos" className="hover:text-black dark:hover:text-white transition-colors">
+                Meus Pedidos
+              </Link>
             )}
-        </header>
-    )
+            {painelAdmin && (
+              <Link href="/produtos" className="hover:text-black dark:hover:text-white transition-colors font-semibold text-black dark:text-white">
+                Admin
+              </Link>
+            )}
+          </nav>
+
+          {/* Search bar em formato pílula */}
+          <div className="relative hidden sm:flex flex-1 max-w-md mx-2">
+            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400">
+              <Search className="h-4 w-4" />
+            </span>
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar produtos, marcas e estilos..."
+              className="h-11 w-full rounded-full bg-[#F2F0F1] dark:bg-[#1f1f1f] pl-11 pr-5 text-sm text-black dark:text-white placeholder:text-neutral-500 outline-none border border-transparent focus:border-black/20 dark:focus:border-white/20 focus:bg-white dark:focus:bg-[#181818] transition-all"
+            />
+          </div>
+
+          {/* Actions: Theme Toggle, Carrinho & Perfil */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Theme Toggle Button */}
+            <ThemeToggle />
+
+            {/* Search icon on mobile */}
+            <button
+              type="button"
+              aria-label="Buscar"
+              onClick={() => {
+                const el = document.getElementById('search-input-mobile')
+                el?.focus()
+              }}
+              className="p-2 text-black dark:text-white sm:hidden hover:opacity-70"
+            >
+              <Search className="h-5 w-5" />
+            </button>
+
+            {/* Cart Button */}
+            <button
+              type="button"
+              onClick={() => router.push('/carrinho')}
+              aria-label={`Carrinho com ${totalCartItems} itens`}
+              className="relative p-2.5 rounded-full hover:bg-[#F2F0F1] dark:hover:bg-[#222222] transition-colors text-black dark:text-white"
+            >
+              <ShoppingBag className="h-5 w-5" />
+              {totalCartItems > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-black dark:bg-white px-1 text-[10px] font-bold text-white dark:text-black">
+                  {totalCartItems}
+                </span>
+              )}
+            </button>
+
+            {/* User Account / Login */}
+            {user ? (
+              <button
+                type="button"
+                onClick={() => router.push('/conta')}
+                aria-label="Minha conta"
+                className="flex items-center gap-2 p-2 rounded-full hover:bg-[#F2F0F1] dark:hover:bg-[#222222] transition-colors text-black dark:text-white"
+              >
+                <div className="h-8 w-8 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center text-xs font-bold uppercase">
+                  {user.name ? user.name[0] : 'U'}
+                </div>
+              </button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/login"
+                  className="rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider text-black dark:text-white hover:bg-[#F2F0F1] dark:hover:bg-[#222222] transition-colors"
+                >
+                  Entrar
+                </Link>
+                <Link
+                  href="/sign"
+                  className="hidden sm:inline-flex rounded-full bg-black dark:bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors"
+                >
+                  Criar Conta
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Mobile Search Input */}
+        <div className="px-4 pb-3 sm:hidden">
+          <div className="relative w-full">
+            <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400">
+              <Search className="h-4 w-4" />
+            </span>
+            <input
+              id="search-input-mobile"
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar produtos..."
+              className="h-10 w-full rounded-full bg-[#F2F0F1] dark:bg-[#1f1f1f] pl-10 pr-4 text-xs text-black dark:text-white placeholder:text-neutral-500 outline-none border border-transparent focus:border-black/20 dark:focus:border-white/20 focus:bg-white dark:focus:bg-[#181818] transition-all"
+            />
+          </div>
+        </div>
+
+        {/* Mobile menu dropdown */}
+        {menuOpen && (
+          <div className="border-t border-black/10 dark:border-white/10 bg-white dark:bg-[#121212] md:hidden">
+            <nav className="flex flex-col px-4 py-4 space-y-3 text-sm font-medium">
+              <Link
+                href="/"
+                onClick={() => setMenuOpen(false)}
+                className="py-2 text-black dark:text-white border-b border-black/5 dark:border-white/5"
+              >
+                Início
+              </Link>
+              <a
+                href="#novidades"
+                onClick={() => setMenuOpen(false)}
+                className="py-2 text-neutral-700 dark:text-neutral-300 border-b border-black/5 dark:border-white/5"
+              >
+                Novidades
+              </a>
+              <a
+                href="#destaques"
+                onClick={() => setMenuOpen(false)}
+                className="py-2 text-neutral-700 dark:text-neutral-300 border-b border-black/5 dark:border-white/5"
+              >
+                Mais Vendidos
+              </a>
+              {user ? (
+                <>
+                  <Link
+                    href="/pedidos"
+                    onClick={() => setMenuOpen(false)}
+                    className="py-2 text-neutral-700 dark:text-neutral-300 border-b border-black/5 dark:border-white/5"
+                  >
+                    Meus Pedidos
+                  </Link>
+                  <Link
+                    href="/conta"
+                    onClick={() => setMenuOpen(false)}
+                    className="py-2 text-neutral-700 dark:text-neutral-300 border-b border-black/5 dark:border-white/5"
+                  >
+                    Minha Conta
+                  </Link>
+                </>
+              ) : (
+                <div className="pt-2 flex flex-col gap-2">
+                  <Link
+                    href="/login"
+                    onClick={() => setMenuOpen(false)}
+                    className="w-full text-center py-2.5 rounded-full border border-black/10 dark:border-white/15 font-semibold text-xs uppercase"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/sign"
+                    onClick={() => setMenuOpen(false)}
+                    className="w-full text-center py-2.5 rounded-full bg-black text-white dark:bg-white dark:text-black font-semibold text-xs uppercase"
+                  >
+                    Criar Conta
+                  </Link>
+                </div>
+              )}
+              {painelAdmin && (
+                <Link
+                  href="/produtos"
+                  onClick={() => setMenuOpen(false)}
+                  className="py-2 font-bold text-black dark:text-white"
+                >
+                  Painel de Admin
+                </Link>
+              )}
+            </nav>
+          </div>
+        )}
+      </header>
+    </>
+  )
 }

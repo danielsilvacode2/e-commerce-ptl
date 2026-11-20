@@ -1,38 +1,37 @@
 'use client';
 
-import MainProducts from "@/src/components/products/main";
-import NavProducts from "@/src/components/products/nav/nav";
-import ReadMe, { UserResponse } from "@/src/actions/me/readMe";
-import { useEffect, useState } from "react";
-import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import NavProducts from '@/src/components/products/nav/nav';
+import MainProducts from '@/src/components/products/main';
+import ReadMe from '@/src/actions/me/readMe';
 
 export default function ProductsPage() {
+    const router = useRouter();
+    const [authorized, setAuthorized] = useState(false);
 
-    const router = useRouter()
-    const [display, setDisplay] = useState<string>("hidden")
-
-    
     useEffect(() => {
         ReadMe()
             .then((dataUser) => {
-                if (dataUser?.role != "admin") {
-                    router.push("/")
-                }else{
-                    setDisplay("")
+                if (dataUser?.role !== 'admin') {
+                    router.push('/');
+                } else {
+                    setAuthorized(true);
                 }
             })
-            .catch(() =>{
-                router.push("/")
-            })
-    }, [])
+            .catch(() => {
+                router.push('/');
+            });
+    }, [router]);
 
+    if (!authorized) {
+        return null;
+    }
 
     return (
-        <div className={ `${display} min-h-screen w-full flex flex-col md:flex-row bg-[#121212] font-inter text-[#eaeaea]`}>
-
+        <div className="min-h-screen w-full flex flex-col md:flex-row bg-white font-sans text-black">
             <NavProducts active="list" />
             <MainProducts />
-
         </div>
     );
 }

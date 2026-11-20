@@ -8,12 +8,13 @@ import HeroHome from '../components/home/hero/hero'
 import HeaderHome from '../components/home/header/header'
 import ArticleHome from '../components/home/article/article'
 import BenefitsHome from '../components/home/benefits/benefit'
+import FooterHome from '../components/home/footer/footer'
 
 const PAGE_LIMIT = 8
 
 function PlaceholderIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="h-16 w-16 text-blue-900/40 sm:h-24 sm:w-24" fill="none"
+    <svg viewBox="0 0 24 24" className="h-16 w-16 text-black/20 dark:text-white/20 sm:h-20 sm:w-20" fill="none"
       stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M3 7l9-4 9 4v10l-9 4-9-4V7z" />
       <path d="M3 7l9 4 9-4M12 11v10" />
@@ -61,7 +62,7 @@ export default function StorePage() {
       setProducts(res.data)
       setTotalPages(res.total_pages)
     } catch {
-      if (id === requestId.current) setError('Error loading products')
+      if (id === requestId.current) setError('Erro ao carregar produtos')
     } finally {
       if (id === requestId.current && !silent) setLoading(false)
     }
@@ -71,36 +72,36 @@ export default function StorePage() {
     loadProducts()
   }, [loadProducts])
 
-
-  
-
   function handlePageChange(newPage: number) {
     setPage(newPage)
     document.getElementById('produtos')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   function handleCartChange() {
-    loadProducts(true)             // atualiza o estoque dos produtos
-    loadCart()                     // atualiza o carrinho
-    setCartVersion((v) => v + 1)   // faz o header buscar o carrinho de novo
+    loadProducts(true)
+    loadCart()
+    setCartVersion((v) => v + 1)
   }
 
   return (
-    <div className="min-h-screen overflow-x-clip bg-[#161616] text-slate-900">
+    <div className="min-h-screen bg-white dark:bg-[#121212] text-black dark:text-white font-sans selection:bg-black selection:text-white dark:selection:bg-white dark:selection:text-black transition-colors">
       <HeaderHome refreshKey={cartVersion} />
-      <HeroHome listProducts={products} />
-      <BenefitsHome />
-      <ArticleHome
-        PlaceholderIcon={PlaceholderIcon}
-        loading={loading}
-        error={error}
-        listProducts={products}
-        page={page}
-        totalPages={totalPages}
-        onPageChange={handlePageChange}
-        onCartChange={handleCartChange}
-        cart={cart}
-      />
+      <main>
+        <HeroHome listProducts={products} />
+        <BenefitsHome />
+        <ArticleHome
+          PlaceholderIcon={PlaceholderIcon}
+          loading={loading}
+          error={error}
+          listProducts={products}
+          page={page}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+          onCartChange={handleCartChange}
+          cart={cart}
+        />
+      </main>
+      <FooterHome />
     </div>
   )
 }

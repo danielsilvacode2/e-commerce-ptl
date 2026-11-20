@@ -1,70 +1,53 @@
-
-
-const ICON_PROPS = {
-  viewBox: '0 0 24 24',
-  className: 'h-5 w-5',
-  fill: 'none',
-  stroke: 'currentColor',
-  strokeWidth: 1.75,
-  strokeLinecap: 'round' as const,
-  strokeLinejoin: 'round' as const,
-}
-
-function TruckIcon() {
-  return (
-    <svg {...ICON_PROPS}>
-      <path d="M3 6h11v10H3zM14 9h4l3 3v4h-7" />
-      <circle cx="7.5" cy="17.5" r="1.8" />
-      <circle cx="17.5" cy="17.5" r="1.8" />
-    </svg>
-  )
-}
-
-function SwapIcon() {
-  return (
-    <svg {...ICON_PROPS}>
-      <path d="M4 8h14l-3-3M20 16H6l3 3" />
-    </svg>
-  )
-}
-
-function LockIcon() {
-  return (
-    <svg {...ICON_PROPS}>
-      <rect x="5" y="11" width="14" height="9" rx="2" />
-      <path d="M8 11V8a4 4 0 018 0v3" />
-    </svg>
-  )
-}
-
-
+import { ShieldCheck, Truck, RefreshCw, Headphones } from 'lucide-react'
 
 export default function BenefitsHome() {
-    const BENEFITS = [
-        { title: 'Frete grátis acima de R$ 199', sub: 'Para todo o Brasil.', Icon: TruckIcon },
-        { title: 'Troca em até 30 dias', sub: 'Sem burocracia.', Icon: SwapIcon },
-        { title: 'Pagamento seguro', sub: 'Pix, cartão ou boleto.', Icon: LockIcon },
-    ]
+  const BENEFITS = [
+    {
+      title: 'Entrega Rápida e Segura',
+      sub: 'Frete grátis para compras acima de R$ 199',
+      icon: Truck,
+    },
+    {
+      title: 'Satisfação Garantida',
+      sub: '30 dias para devolução ou troca sem complicações',
+      icon: RefreshCw,
+    },
+    {
+      title: 'Pagamento Criptografado',
+      sub: 'Pix, cartões em até 12x e boleto com segurança total',
+      icon: ShieldCheck,
+    },
+    {
+      title: 'Suporte 24/7',
+      sub: 'Atendimento exclusivo via chat e WhatsApp',
+      icon: Headphones,
+    },
+  ]
 
-
-    return (
-        <section className="border-b border-[#333] bg-[#161616] font-inter text-[#eaeaea]">
-            <ul className="mx-auto grid max-w-[1120px] sm:grid-cols-3">
-                {BENEFITS.map(({ title, sub, Icon }) => (
-                    <li
-                        key={title}
-                        className="flex items-center gap-3 border-b border-[#333] px-4 py-4 last:border-b-0 sm:border-b-0 sm:border-r sm:px-6 sm:last:border-r-0"
-                    >
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-none border border-[#333] text-[#ff6a00]">
-                            <Icon />
-                        </span>
-                        <div>
-                            <p className="text-[12px] font-medium uppercase tracking-widest text-[#eaeaea]">{title}</p>
-                            <p className="mt-0.5 text-[12px] uppercase tracking-wider text-neutral-500">{sub}</p>
-                        </div>
-                    </li>
-                ))}
-            </ul>
-        </section>
-    )
+  return (
+    <section className="bg-white dark:bg-[#121212] border-b border-black/10 dark:border-white/10 py-10 sm:py-12 transition-colors">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+          {BENEFITS.map(({ title, sub, icon: Icon }) => (
+            <div
+              key={title}
+              className="flex items-start gap-4 p-4 rounded-2xl bg-[#F2F0F1]/60 dark:bg-[#1a1a1a] border border-black/5 dark:border-white/10 hover:border-black/15 dark:hover:border-white/20 transition-all"
+            >
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-black dark:bg-white text-white dark:text-black">
+                <Icon className="h-5 w-5" />
+              </div>
+              <div>
+                <h4 className="font-display font-bold text-sm uppercase tracking-wide text-black dark:text-white">
+                  {title}
+                </h4>
+                <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed font-sans">
+                  {sub}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
 }

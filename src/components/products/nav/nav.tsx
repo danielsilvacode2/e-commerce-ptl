@@ -1,12 +1,7 @@
 "use client"
 import Link from "next/link"
-import { Package, Plus, List, House } from "lucide-react"
+import { Plus, List, House, ShoppingBag, Users, Menu, X } from "lucide-react"
 import { useState } from "react"
-import { Menu, X } from "lucide-react"
-
-
-
-const HEADING_FONT = "font-['Barlow_Condensed',Impact,sans-serif]";
 
 type NavItem = {
     key: string
@@ -16,46 +11,43 @@ type NavItem = {
 }
 
 const NAV: NavItem[] = [
-    { key: "home", label: "Pagina principal", href: "/", icon: House },
+    { key: "home", label: "Loja Principal", href: "/", icon: House },
     { key: "list", label: "Produtos", href: "/produtos", icon: List },
-    { key: "new", label: "Novo produto", href: "/produtos/novo", icon: Plus },
-     { key: "listusers", label: "Usuarios", href: "/usuarios", icon: Plus },
-
-    // adicione os outros aqui
+    { key: "new", label: "Novo Produto", href: "/produtos/novo", icon: Plus },
+    { key: "orders", label: "Pedidos", href: "/admin/pedidos", icon: ShoppingBag },
+    { key: "listusers", label: "Usuários", href: "/usuarios", icon: Users },
 ]
 
 type NavProductsProps = {
-    active: string // key do item da página atual, ex: "list"
+    active: string
 }
 
 export default function NavProducts({ active }: NavProductsProps) {
     const [menuOpen, setMenuOpen] = useState(false)
-    return (
-        <aside className="shrink-0 bg-[#161616] border-b md:border-b-0 md:border-r border-[#333] flex flex-col md:w-64">
 
-            {/* Topo: título + botão hambúrguer (mobile) */}
-            <div className="flex items-center justify-between pr-4 md:pr-0">
-                <span className={`${HEADING_FONT} px-4 py-4 text-xl font-bold uppercase tracking-wider text-[#ff6a00] sm:px-6 sm:text-2xl md:py-5`}>
-                    STORE // ADMIN
-                </span>
+    return (
+        <aside className="shrink-0 bg-white border-b md:border-b-0 md:border-r border-black/10 flex flex-col md:w-64 font-sans">
+            {/* Topo: Logo + botão hambúrguer (mobile) */}
+            <div className="flex items-center justify-between p-4 sm:p-6 md:pb-8">
+                <Link href="/" className="font-display font-extrabold text-xl uppercase tracking-tight text-black">
+                    SHOP.CO <span className="text-[10px] ml-1 bg-black text-white px-2 py-0.5 rounded-full font-sans tracking-normal">ADMIN</span>
+                </Link>
 
                 <button
                     type="button"
                     aria-label={menuOpen ? "Fechar menu" : "Abrir menu"}
-                    aria-expanded={menuOpen}
-                    aria-controls="admin-nav"
-                    onClick={() => setMenuOpen((o) => !o)}
-                    className="flex h-10 w-10 items-center justify-center border border-[#333] text-[#eaeaea] transition hover:bg-[#ff6a00] hover:text-[#161616] md:hidden"
+                    onClick={() => setMenuOpen(!menuOpen)}
+                    className="p-2 text-black md:hidden rounded-lg hover:bg-[#F2F0F1]"
                 >
                     {menuOpen ? <X size={20} /> : <Menu size={20} />}
                 </button>
             </div>
 
-            {/* Navegação: colapsável no mobile, sempre visível no desktop */}
+            {/* Links de navegação */}
             <nav
                 id="admin-nav"
-                aria-label="Principal"
-                className={`${menuOpen ? "flex" : "hidden"} flex-col border-t border-[#333] md:flex md:mt-2 md:border-t-0`}
+                aria-label="Painel de navegação administrativa"
+                className={`${menuOpen ? "flex" : "hidden"} flex-col px-3 space-y-1 md:flex`}
             >
                 {NAV.map(({ key, label, href, icon: Icon }) => {
                     const isActive = key === active
@@ -66,10 +58,11 @@ export default function NavProducts({ active }: NavProductsProps) {
                             href={href}
                             onClick={() => setMenuOpen(false)}
                             aria-current={isActive ? "page" : undefined}
-                            className={`flex items-center gap-3 px-4 py-3 text-xs uppercase tracking-widest border-l-2 transition text-left sm:px-6 ${isActive
-                                ? "border-[#ff6a00] bg-[#1c1c1c] text-[#ff6a00]"
-                                : "border-transparent text-white hover:bg-[#1c1c1c] hover:text-[#ff6a00]"
-                                }`}
+                            className={`flex items-center gap-3 px-4 py-3 rounded-full text-xs font-semibold uppercase tracking-wider transition-colors ${
+                                isActive
+                                    ? "bg-black text-white"
+                                    : "text-neutral-600 hover:bg-[#F2F0F1] hover:text-black"
+                            }`}
                         >
                             <Icon size={16} />
                             {label}
@@ -78,9 +71,9 @@ export default function NavProducts({ active }: NavProductsProps) {
                 })}
             </nav>
 
-            <span className="hidden md:block mt-auto px-6 py-5 text-[11px] uppercase tracking-widest text-neutral-600">
-                Secure Terminal v2.6
-            </span>
+            <div className="hidden md:block mt-auto p-6 border-t border-black/5 text-[11px] uppercase tracking-wider text-neutral-400">
+                Painel Gerencial 2026
+            </div>
         </aside>
     )
 }

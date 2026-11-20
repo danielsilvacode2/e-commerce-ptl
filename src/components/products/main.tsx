@@ -1,12 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Pencil, Trash2, ImageOff, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Pencil, Trash2, ImageOff, X, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
+import Link from 'next/link'
 import ProductReadAllService, { ProductResponse } from '@/src/actions/product/read_all_request'
 import DeleteProductById from '@/src/actions/product/detete_product'
 import EditProductModal from './modal/modal'
 
-const DELETE_DELAY_MS = 5000
+const DELETE_DELAY_MS = 4000
 const PAGE_LIMIT = 8
 
 const formatPrice = (value: number | string) =>
@@ -58,7 +59,6 @@ export default function MainProducts() {
         const timer = setTimeout(async () => {
             try {
                 await DeleteProductById({ Id: product.id })
-                // Se era o último item de uma página que não é a primeira, volta uma página
                 if (products.length === 1 && page > 1) {
                     setPage((p) => p - 1)
                 } else {
@@ -72,8 +72,7 @@ export default function MainProducts() {
         }, DELETE_DELAY_MS)
 
         return () => clearTimeout(timer)
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [pendingDelete])
+    }, [pendingDelete, page, products.length])
 
     function handleEdit(product: ProductResponse) {
         setEditingProduct(product)
@@ -90,7 +89,7 @@ export default function MainProducts() {
     }
 
     return (
-        <main className="min-h-screen w-full bg-[#121212] font-inter text-[#eaeaea] px-4 py-6 sm:px-6 sm:py-10">
+        <main className="min-h-screen flex-1 bg-white px-6 py-8 font-sans text-black">
             <style>{`
                 @keyframes delete-progress {
                     from { width: 100%; }
@@ -99,103 +98,111 @@ export default function MainProducts() {
             `}</style>
 
             <div className="mx-auto w-full max-w-5xl">
-
                 {/* Cabeçalho */}
-                <header className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 border-b border-[#333] pb-4">
-                    <div className="min-w-0">
-                        <h1 className="font-['Barlow_Condensed',Impact,sans-serif] text-2xl font-bold uppercase tracking-wide text-[#eaeaea] sm:text-3xl">
-                            Produtos
+                <header className="flex flex-wrap items-end justify-between gap-4 border-b border-black/10 pb-6">
+                    <div>
+                        <h1 className="font-display text-3xl font-extrabold uppercase tracking-tight text-black">
+                            PRODUTOS CADASTRADOS
                         </h1>
-                        <p className="mt-1 text-[11px] uppercase tracking-wider text-neutral-400 sm:text-xs">
-                            Gerencie os produtos cadastrados.
+                        <p className="mt-1 text-sm text-neutral-600 font-sans">
+                            Gerencie os produtos ativos na sua loja.
                         </p>
                     </div>
-                    <span className="shrink-0 text-[11px] uppercase tracking-widest text-[#ff6a00] sm:text-xs">
-                        {totalRows} {totalRows === 1 ? "item" : "itens"}
-                    </span>
+                    <div className="flex items-center gap-3">
+                        <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
+                            {totalRows} {totalRows === 1 ? "produto" : "produtos"}
+                        </span>
+                        <Link
+                            href="/produtos/novo"
+                            className="inline-flex items-center gap-1.5 rounded-full bg-black px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white hover:bg-neutral-800 transition-colors"
+                        >
+                            <Plus size={14} /> Novo Produto
+                        </Link>
+                    </div>
                 </header>
 
                 {/* Estados */}
                 {loading && (
-                    <p className="mt-8 text-xs uppercase tracking-widest text-neutral-400">
-                        Carregando...
+                    <p className="mt-8 text-xs font-semibold uppercase tracking-wider text-neutral-500">
+                        Carregando produtos...
                     </p>
                 )}
 
                 {error && (
-                    <span role="alert" className="mt-8 block text-[11px] uppercase tracking-wider text-red-500">
+                    <div role="alert" className="mt-6 p-4 rounded-2xl bg-red-50 text-red-600 text-xs font-medium border border-red-200">
                         {error}
-                    </span>
+                    </div>
                 )}
 
                 {errorDelete && (
-                    <span role="alert" className="mt-8 block text-[11px] uppercase tracking-wider text-red-500">
+                    <div role="alert" className="mt-6 p-4 rounded-2xl bg-red-50 text-red-600 text-xs font-medium border border-red-200">
                         {errorDelete}
-                    </span>
+                    </div>
                 )}
 
                 {!loading && !error && products.length === 0 && (
-                    <p className="mt-8 text-xs uppercase tracking-widest text-neutral-500">
-                        Nenhum produto encontrado.
-                    </p>
+                    <div className="mt-8 rounded-3xl bg-[#F2F0F1] p-12 text-center">
+                        <p className="text-sm font-semibold uppercase tracking-wider text-black">
+                            Nenhum produto cadastrado no momento.
+                        </p>
+                    </div>
                 )}
 
-                {/* Lista + paginação */}
+                {/* Lista */}
                 {!loading && !error && products.length > 0 && (
                     <>
                         <ul className="mt-6 flex flex-col gap-3">
                             {products.map((product) => (
                                 <li
                                     key={product.id}
-                                    className="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-3 border border-[#333] bg-[#1c1c1c] p-3 transition hover:border-[#ff6a00] sm:flex sm:gap-4"
+                                    className="rounded-3xl border border-black/10 bg-white p-4 transition-all hover:border-black/30 hover:shadow-sm sm:flex sm:items-center sm:gap-4"
                                 >
-                                    {/* Imagem */}
-                                    <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden border border-[#333] bg-[#161616] sm:h-16 sm:w-16">
+                                    {/* Imagem com fundo #F2F0F1 */}
+                                    <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#F2F0F1] p-2">
                                         {product.image ? (
-                                            // eslint-disable-next-line @next/next/no-img-element
                                             <img
                                                 src={product.image}
                                                 alt={product.name}
-                                                className="h-full w-full object-cover"
+                                                className="h-full w-full object-contain mix-blend-multiply"
                                             />
                                         ) : (
-                                            <ImageOff size={20} className="text-neutral-600" />
+                                            <ImageOff size={20} className="text-neutral-400" />
                                         )}
                                     </div>
 
                                     {/* Nome + SKU */}
-                                    <div className="min-w-0 sm:flex-1">
-                                        <p className="line-clamp-2 break-words text-sm font-medium uppercase tracking-wide text-[#eaeaea] sm:truncate">
+                                    <div className="min-w-0 sm:flex-1 mt-3 sm:mt-0">
+                                        <p className="font-display font-bold text-base text-black uppercase tracking-tight truncate">
                                             {product.name}
                                         </p>
-                                        <p className="mt-1 truncate text-[11px] uppercase tracking-widest text-neutral-500">
+                                        <p className="text-xs text-neutral-500 font-sans mt-0.5">
                                             SKU: {product.sku}
                                         </p>
                                     </div>
 
-                                    {/* Preço + Ações (linha própria no mobile) */}
-                                    <div className="col-span-2 flex items-center justify-between gap-3 border-t border-[#333] pt-3 sm:col-span-1 sm:contents sm:border-0 sm:pt-0">
-                                        <span className="shrink-0 text-sm font-medium tracking-wide text-[#ff6a00]">
+                                    {/* Preço + Ações */}
+                                    <div className="flex items-center justify-between sm:justify-end gap-6 mt-3 sm:mt-0 pt-3 sm:pt-0 border-t sm:border-0 border-black/5">
+                                        <span className="font-display font-bold text-base sm:text-lg text-black">
                                             {formatPrice(product.price)}
                                         </span>
 
-                                        <div className="flex shrink-0 items-center gap-2 sm:gap-1">
+                                        <div className="flex items-center gap-2">
                                             <button
                                                 type="button"
                                                 onClick={() => handleEdit(product)}
                                                 aria-label={`Editar ${product.name}`}
-                                                className="flex h-10 w-10 cursor-pointer items-center justify-center border border-[#333] text-neutral-400 transition hover:border-[#ff6a00] hover:text-[#ff6a00] sm:h-9 sm:w-9"
+                                                className="h-9 w-9 rounded-full border border-black/15 flex items-center justify-center text-black hover:bg-[#F2F0F1] transition-colors cursor-pointer"
                                             >
-                                                <Pencil size={16} />
+                                                <Pencil size={15} />
                                             </button>
                                             <button
                                                 type="button"
                                                 onClick={() => handleDelete(product)}
                                                 disabled={!!pendingDelete}
                                                 aria-label={`Excluir ${product.name}`}
-                                                className="flex h-10 w-10 cursor-pointer items-center justify-center border border-[#333] text-neutral-400 transition hover:border-red-500 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-40 sm:h-9 sm:w-9"
+                                                className="h-9 w-9 rounded-full border border-red-200 flex items-center justify-center text-red-600 hover:bg-red-50 disabled:opacity-40 transition-colors cursor-pointer"
                                             >
-                                                <Trash2 size={16} />
+                                                <Trash2 size={15} />
                                             </button>
                                         </div>
                                     </div>
@@ -206,30 +213,28 @@ export default function MainProducts() {
                         {totalPages > 1 && (
                             <nav
                                 aria-label="Paginação"
-                                className="mt-6 flex items-center justify-between gap-3 border-t border-[#333] pt-4"
+                                className="mt-10 flex items-center justify-center gap-3"
                             >
                                 <button
                                     type="button"
                                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                                     disabled={page <= 1}
-                                    aria-label="Página anterior"
-                                    className="flex h-9 w-9 cursor-pointer items-center justify-center border border-[#333] text-neutral-400 transition hover:border-[#ff6a00] hover:text-[#ff6a00] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[#333] disabled:hover:text-neutral-400"
+                                    className="h-10 px-4 rounded-full border border-black/15 text-xs font-semibold uppercase tracking-wider hover:bg-[#F2F0F1] disabled:opacity-40 transition-colors cursor-pointer"
                                 >
-                                    <ChevronLeft size={16} />
+                                    <ChevronLeft size={16} className="inline mr-1" /> Anterior
                                 </button>
 
-                                <span className="text-[11px] uppercase tracking-widest text-neutral-400 sm:text-xs">
-                                    Página <span className="text-[#ff6a00]">{page}</span> de {totalPages}
+                                <span className="text-xs text-neutral-600 font-sans font-medium px-2">
+                                    Página <strong className="text-black">{page}</strong> de {totalPages}
                                 </span>
 
                                 <button
                                     type="button"
                                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                                     disabled={page >= totalPages}
-                                    aria-label="Próxima página"
-                                    className="flex h-9 w-9 cursor-pointer items-center justify-center border border-[#333] text-neutral-400 transition hover:border-[#ff6a00] hover:text-[#ff6a00] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[#333] disabled:hover:text-neutral-400"
+                                    className="h-10 px-4 rounded-full border border-black/15 text-xs font-semibold uppercase tracking-wider hover:bg-[#F2F0F1] disabled:opacity-40 transition-colors cursor-pointer"
                                 >
-                                    <ChevronRight size={16} />
+                                    Próxima <ChevronRight size={16} className="inline ml-1" />
                                 </button>
                             </nav>
                         )}
@@ -252,25 +257,24 @@ export default function MainProducts() {
             {pendingDelete && (
                 <div
                     role="status"
-                    className="fixed bottom-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 overflow-hidden border border-[#ff6a00] bg-[#1c1c1c] shadow-lg"
+                    className="fixed bottom-6 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 overflow-hidden rounded-2xl bg-black text-white p-4 shadow-2xl border border-white/10"
                 >
-                    <div className="flex items-center justify-between gap-3 px-3 py-2">
-                        <span className="min-w-0 break-words text-[11px] uppercase tracking-wider text-[#ff6a00]">
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                        <span className="text-xs font-semibold">
                             Excluindo: {pendingDelete.name}
                         </span>
                         <button
                             type="button"
                             onClick={handleCancelDelete}
-                            aria-label="Cancelar exclusão"
-                            className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center border border-[#333] text-neutral-400 transition hover:border-red-500 hover:text-red-500"
+                            className="rounded-full bg-white/10 p-1.5 text-white hover:bg-white/20 transition-colors"
                         >
                             <X size={14} />
                         </button>
                     </div>
-                    <div className="h-1 w-full bg-[#333]">
+                    <div className="h-1 w-full bg-white/20 rounded-full overflow-hidden">
                         <div
                             key={pendingDelete.id}
-                            className="h-full bg-[#ff6a00]"
+                            className="h-full bg-white"
                             style={{ animation: `delete-progress ${DELETE_DELAY_MS}ms linear forwards` }}
                         />
                     </div>

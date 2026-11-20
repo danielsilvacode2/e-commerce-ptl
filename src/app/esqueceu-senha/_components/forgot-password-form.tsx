@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, ArrowRight } from 'lucide-react'
 import ResetPasswordService from '@/src/actions/auth/reset_password'
 
 export default function ForgotPasswordForm() {
@@ -57,82 +57,84 @@ export default function ForgotPasswordForm() {
     }
 
     const inputBase =
-        'h-11 w-full rounded-none border bg-[#1c1c1c] px-3.5 text-sm text-[#eaeaea] placeholder:text-neutral-500 outline-none transition font-inter'
-    const inputOk = 'border-[#333] focus:border-[#ff6a00] focus:ring-1 focus:ring-[#ff6a00]'
-    const inputInvalid = 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500'
+        'h-12 w-full rounded-full border bg-[#F2F0F1] px-5 text-sm text-black placeholder:text-neutral-500 outline-none transition font-sans'
+    const inputOk = 'border-transparent focus:border-black/20 focus:bg-white'
+    const inputInvalid = 'border-red-500 bg-red-50 focus:border-red-500'
 
     return (
-        <main className="min-h-screen w-full grid lg:grid-cols-[1.1fr_1fr] bg-[#121212] font-inter text-[#eaeaea]">
+        <main className="min-h-screen w-full grid lg:grid-cols-[1.1fr_1fr] bg-white font-sans text-black">
             {/* Painel lateral da marca */}
-            <section className="hidden lg:flex flex-col justify-between p-12 text-[#eaeaea] bg-[#161616] border-r border-[#333] relative overflow-hidden">
-                <div className="absolute inset-0 bg-[radial-gradient(#333_1px,transparent_1px)] [background-size:16px_16px] opacity-30" />
+            <section className="hidden lg:flex flex-col justify-between p-16 bg-[#F2F0F1] border-r border-black/10 relative overflow-hidden">
+                <div className="absolute inset-0 bg-radial from-neutral-200/50 to-transparent pointer-events-none" />
 
-                <span className="font-['Barlow_Condensed',Impact,sans-serif] text-2xl font-bold uppercase tracking-wider text-[#ff6a00] z-10">
-                    STORE // RECOVERY
-                </span>
+                <Link href="/" className="font-display text-3xl font-extrabold uppercase tracking-tight text-black z-10">
+                    SHOP.CO
+                </Link>
 
-                <div className="max-w-sm z-10">
-                    <h1 className="font-['Barlow_Condensed',Impact,sans-serif] text-4xl font-bold uppercase tracking-wide leading-tight text-[#eaeaea]">
-                        Recuperação de Acesso
+                <div className="max-w-md z-10">
+                    <span className="inline-block px-3.5 py-1 rounded-full bg-black text-white text-[10px] font-bold uppercase tracking-widest mb-4">
+                        Segurança & Acesso
+                    </span>
+                    <h1 className="font-display text-5xl font-extrabold uppercase tracking-tight leading-[0.95] text-black">
+                        RECUPERAR ACESSO
                     </h1>
-                    <p className="mt-3 text-xs text-neutral-400 leading-relaxed uppercase tracking-wider">
-                        Informe seu e-mail cadastrado. Enviaremos um código de segurança de uso único para redefinir sua senha.
+                    <p className="mt-4 text-sm text-neutral-600 leading-relaxed font-sans">
+                        Informe seu e-mail cadastrado. Enviaremos um código de segurança de uso único de 6 dígitos para redefinir sua senha com tranquilidade.
                     </p>
                 </div>
 
-                <div className="text-[11px] uppercase tracking-widest text-neutral-600 z-10">
-                    Secure Terminal v2.6
+                <div className="text-xs uppercase tracking-widest text-neutral-500 z-10 font-mono">
+                    SHOP.CO RECOVERY 2026
                 </div>
             </section>
 
             {/* Seção do Formulário */}
-            <section className="flex items-center justify-center px-6 py-12 bg-[#121212]">
-                <div className="w-full max-w-[360px]">
+            <section className="flex items-center justify-center px-6 py-12 bg-white">
+                <div className="w-full max-w-[380px]">
                     <div className="mb-6">
                         <Link
                             href="/login"
-                            className="inline-flex items-center gap-2 text-xs uppercase tracking-wider text-neutral-400 hover:text-[#ff6a00] transition"
+                            className="inline-flex items-center gap-2 text-xs uppercase tracking-wider text-neutral-600 hover:text-black transition"
                         >
                             <ArrowLeft size={16} />
                             Voltar para o login
                         </Link>
                     </div>
 
-                    <h2 className="font-['Barlow_Condensed',Impact,sans-serif] text-3xl font-bold uppercase tracking-wide text-[#eaeaea]">
-                        Esqueceu sua senha?
+                    <h2 className="font-display text-3xl sm:text-4xl font-extrabold uppercase tracking-tight text-black">
+                        ESQUECEU A SENHA?
                     </h2>
-                    <p className="mt-1.5 text-xs text-neutral-400 uppercase tracking-wider">
+                    <p className="mt-2 text-sm text-neutral-600 font-sans">
                         Digite seu e-mail para receber as instruções de recuperação.
                     </p>
 
                     {successMessage ? (
                         <div
                             role="status"
-                            className="mt-6 border border-[#ff6a00]/60 bg-[#161616] p-4 text-xs text-[#eaeaea]"
+                            className="mt-6 rounded-2xl border border-black/10 bg-[#F2F0F1] p-5 text-xs text-black space-y-3"
                         >
                             <div className="flex items-start gap-2.5">
-                                <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-[#ff6a00]" />
-                                <div className="space-y-2">
-                                    <p className="font-medium tracking-wide text-[#ff6a00]">
+                                <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-emerald-600" />
+                                <div className="space-y-1">
+                                    <p className="font-bold text-black">
                                         Código enviado com sucesso!
                                     </p>
-                                    <p className="text-neutral-400 leading-relaxed">
-                                        Enviamos um código de verificação para{' '}
-                                        <span className="text-[#eaeaea] font-medium">{email}</span>. Você será redirecionado para a tela de redefinição...
+                                    <p className="text-neutral-600 leading-relaxed">
+                                        Enviamos um código para <span className="text-black font-semibold">{email}</span>. Redirecionando...
                                     </p>
                                 </div>
                             </div>
 
                             <Link
                                 href={`/redefinir-senha?email=${encodeURIComponent(email.trim())}`}
-                                className="mt-4 block w-full text-center py-2.5 bg-[#ff6a00] text-xs font-medium uppercase tracking-widest text-[#161616] hover:brightness-110 transition"
+                                className="mt-3 block w-full text-center py-3 rounded-full bg-black text-xs font-semibold uppercase tracking-wider text-white hover:bg-neutral-800 transition"
                             >
                                 Avançar para redefinição
                             </Link>
                         </div>
                     ) : (
                         <form
-                            className="mt-6 flex flex-col gap-5"
+                            className="mt-8 flex flex-col gap-5"
                             noValidate
                             onSubmit={(e) => {
                                 e.preventDefault()
@@ -143,7 +145,7 @@ export default function ForgotPasswordForm() {
                             <div className="flex flex-col gap-1.5">
                                 <label
                                     htmlFor="email"
-                                    className="text-xs uppercase tracking-widest text-neutral-300 font-medium"
+                                    className="text-xs uppercase tracking-wider text-black font-bold"
                                 >
                                     E-mail cadastrado
                                 </label>
@@ -168,40 +170,37 @@ export default function ForgotPasswordForm() {
                                     <span
                                         id="email-error"
                                         role="alert"
-                                        className="text-[11px] uppercase tracking-wider text-red-500"
+                                        className="text-[11px] font-medium text-red-600 px-3"
                                     >
                                         {emailError}
                                     </span>
                                 )}
                             </div>
 
-                            {/* Mensagem geral de erro */}
                             {formError && (
-                                <span role="alert" className="text-[11px] uppercase tracking-wider text-red-500">
+                                <div role="alert" className="p-3 rounded-2xl bg-red-50 text-xs text-red-600 font-medium">
                                     {formError}
-                                </span>
+                                </div>
                             )}
 
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="mt-2 h-11 w-full rounded-none bg-[#ff6a00] text-xs font-medium uppercase tracking-widest text-[#161616] transition hover:brightness-110 active:brightness-95 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                                className="mt-2 h-12 w-full rounded-full bg-black text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-neutral-800 active:scale-[0.99] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
-                                {loading ? 'Enviando código...' : 'Enviar código'}
+                                {loading ? 'Enviando código...' : 'Enviar Código'} <ArrowRight size={16} />
                             </button>
                         </form>
                     )}
 
-                    <div className="mt-8 pt-6 border-t border-[#333] flex flex-col gap-3 text-xs uppercase tracking-wider text-neutral-400">
-                        <p>
-                            Já possui um código?{' '}
-                            <Link
-                                href="/redefinir-senha"
-                                className="font-medium text-[#ff6a00] hover:underline underline-offset-4"
-                            >
-                                Digitar código e redefinir
-                            </Link>
-                        </p>
+                    <div className="mt-8 pt-6 border-t border-black/10 text-center text-xs text-neutral-600">
+                        Já possui um código?{' '}
+                        <Link
+                            href="/redefinir-senha"
+                            className="font-bold text-black underline underline-offset-4 hover:opacity-80"
+                        >
+                            Redefinir senha agora
+                        </Link>
                     </div>
                 </div>
             </section>

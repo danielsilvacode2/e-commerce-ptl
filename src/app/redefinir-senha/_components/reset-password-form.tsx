@@ -3,7 +3,7 @@
 import { ClipboardEvent, KeyboardEvent, Suspense, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ArrowLeft, CheckCircle2, Eye, EyeOff, RotateCcw } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Eye, EyeOff, RotateCcw, ArrowRight } from 'lucide-react'
 import ConfirmResetPasswordService from '@/src/actions/auth/confirm_reset_password'
 
 const CODE_LENGTH = 6
@@ -148,14 +148,14 @@ function ResetPasswordFormContent() {
                 if (err.message === 'INVALID_OR_EXPIRED_CODE') {
                     setIsExpiredOrInvalidCode(true)
                     setFormError(
-                        'Código de verificação incorreto ou expirado. Verifique o código recebido ou solicite um novo.'
+                        'Código de verificação incorreto ou expirado.'
                     )
                     setDigits(Array(CODE_LENGTH).fill(''))
                     focusInput(0)
                 } else if (err.message === 'RATE_LIMIT') {
                     setFormError('Muitas tentativas consecutivas. Aguarde alguns minutos antes de tentar novamente.')
                 } else if (err.message === 'USER_NOT_FOUND') {
-                    setFormError('Usuário não encontrado. Verifique o endereço de e-mail informado.')
+                    setFormError('Usuário não encontrado. Verifique o e-mail.')
                 } else if (err.message === 'INVALID_INPUT') {
                     setFormError('Dados inválidos. A senha precisa ter pelo menos 8 caracteres sem espaços.')
                 } else {
@@ -170,81 +170,84 @@ function ResetPasswordFormContent() {
     }
 
     const inputBase =
-        'h-11 w-full rounded-none border bg-[#1c1c1c] px-3.5 text-sm text-[#eaeaea] placeholder:text-neutral-500 outline-none transition font-inter'
-    const inputOk = 'border-[#333] focus:border-[#ff6a00] focus:ring-1 focus:ring-[#ff6a00]'
-    const inputInvalid = 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500'
+        'h-12 w-full rounded-full border bg-[#F2F0F1] px-5 text-sm text-black placeholder:text-neutral-500 outline-none transition font-sans'
+    const inputOk = 'border-transparent focus:border-black/20 focus:bg-white'
+    const inputInvalid = 'border-red-500 bg-red-50 focus:border-red-500'
 
     return (
-        <main className="min-h-screen w-full grid lg:grid-cols-[1.1fr_1fr] bg-[#121212] font-inter text-[#eaeaea]">
+        <main className="min-h-screen w-full grid lg:grid-cols-[1.1fr_1fr] bg-white font-sans text-black">
             {/* Painel lateral da marca */}
-            <section className="hidden lg:flex flex-col justify-between p-12 text-[#eaeaea] bg-[#161616] border-r border-[#333] relative overflow-hidden">
-                <div className="absolute inset-0 bg-[radial-gradient(#333_1px,transparent_1px)] [background-size:16px_16px] opacity-30" />
+            <section className="hidden lg:flex flex-col justify-between p-16 bg-[#F2F0F1] border-r border-black/10 relative overflow-hidden">
+                <div className="absolute inset-0 bg-radial from-neutral-200/50 to-transparent pointer-events-none" />
 
-                <span className="font-['Barlow_Condensed',Impact,sans-serif] text-2xl font-bold uppercase tracking-wider text-[#ff6a00] z-10">
-                    STORE // SECURITY
-                </span>
+                <Link href="/" className="font-display text-3xl font-extrabold uppercase tracking-tight text-black z-10">
+                    SHOP.CO
+                </Link>
 
-                <div className="max-w-sm z-10">
-                    <h1 className="font-['Barlow_Condensed',Impact,sans-serif] text-4xl font-bold uppercase tracking-wide leading-tight text-[#eaeaea]">
-                        Nova Senha de Acesso
+                <div className="max-w-md z-10">
+                    <span className="inline-block px-3.5 py-1 rounded-full bg-black text-white text-[10px] font-bold uppercase tracking-widest mb-4">
+                        Segurança & Acesso
+                    </span>
+                    <h1 className="font-display text-5xl font-extrabold uppercase tracking-tight leading-[0.95] text-black">
+                        NOVA SENHA
                     </h1>
-                    <p className="mt-3 text-xs text-neutral-400 leading-relaxed uppercase tracking-wider">
+                    <p className="mt-4 text-sm text-neutral-600 leading-relaxed font-sans">
                         Insira o código de segurança enviado para o seu e-mail e defina uma nova senha forte para proteger sua conta.
                     </p>
                 </div>
 
-                <div className="text-[11px] uppercase tracking-widest text-neutral-600 z-10">
-                    Secure Terminal v2.6
+                <div className="text-xs uppercase tracking-widest text-neutral-500 z-10 font-mono">
+                    SHOP.CO SECURITY 2026
                 </div>
             </section>
 
             {/* Formulário */}
-            <section className="flex items-center justify-center px-6 py-12 bg-[#121212]">
-                <div className="w-full max-w-[380px]">
+            <section className="flex items-center justify-center px-6 py-12 bg-white">
+                <div className="w-full max-w-[400px]">
                     <div className="mb-6">
                         <Link
                             href="/login"
-                            className="inline-flex items-center gap-2 text-xs uppercase tracking-wider text-neutral-400 hover:text-[#ff6a00] transition"
+                            className="inline-flex items-center gap-2 text-xs uppercase tracking-wider text-neutral-600 hover:text-black transition"
                         >
                             <ArrowLeft size={16} />
                             Voltar para o login
                         </Link>
                     </div>
 
-                    <h2 className="font-['Barlow_Condensed',Impact,sans-serif] text-3xl font-bold uppercase tracking-wide text-[#eaeaea]">
-                        Redefinir senha
+                    <h2 className="font-display text-3xl sm:text-4xl font-extrabold uppercase tracking-tight text-black">
+                        REDEFINIR SENHA
                     </h2>
-                    <p className="mt-1.5 text-xs text-neutral-400 uppercase tracking-wider">
+                    <p className="mt-2 text-sm text-neutral-600 font-sans">
                         Informe o código de 6 dígitos e sua nova senha.
                     </p>
 
                     {isSuccess ? (
                         <div
                             role="status"
-                            className="mt-6 border border-[#ff6a00]/60 bg-[#161616] p-5 text-xs text-[#eaeaea] space-y-4"
+                            className="mt-6 rounded-2xl border border-black/10 bg-[#F2F0F1] p-5 text-xs text-black space-y-3"
                         >
                             <div className="flex items-start gap-3">
-                                <CheckCircle2 size={22} className="mt-0.5 shrink-0 text-[#ff6a00]" />
-                                <div className="space-y-1.5">
-                                    <p className="font-medium text-sm tracking-wide text-[#ff6a00]">
+                                <CheckCircle2 size={22} className="mt-0.5 shrink-0 text-emerald-600" />
+                                <div className="space-y-1">
+                                    <p className="font-bold text-black text-sm">
                                         Senha redefinida com sucesso!
                                     </p>
-                                    <p className="text-neutral-400 leading-relaxed">
-                                        Sua senha foi atualizada no sistema. Você será redirecionado para o login em instantes...
+                                    <p className="text-neutral-600 leading-relaxed">
+                                        Sua senha foi atualizada. Você será redirecionado para o login em instantes...
                                     </p>
                                 </div>
                             </div>
 
                             <Link
                                 href="/login?reset=success"
-                                className="block w-full text-center py-2.5 bg-[#ff6a00] text-xs font-medium uppercase tracking-widest text-[#161616] hover:brightness-110 transition"
+                                className="block w-full text-center py-3 rounded-full bg-black text-xs font-semibold uppercase tracking-wider text-white hover:bg-neutral-800 transition"
                             >
                                 Ir para o login agora
                             </Link>
                         </div>
                     ) : (
                         <form
-                            className="mt-6 flex flex-col gap-4"
+                            className="mt-8 flex flex-col gap-4"
                             noValidate
                             onSubmit={(e) => {
                                 e.preventDefault()
@@ -255,7 +258,7 @@ function ResetPasswordFormContent() {
                             <div className="flex flex-col gap-1.5">
                                 <label
                                     htmlFor="email"
-                                    className="text-xs uppercase tracking-widest text-neutral-300 font-medium"
+                                    className="text-xs uppercase tracking-wider text-black font-bold"
                                 >
                                     E-mail
                                 </label>
@@ -280,19 +283,19 @@ function ResetPasswordFormContent() {
                                     <span
                                         id="email-error"
                                         role="alert"
-                                        className="text-[11px] uppercase tracking-wider text-red-500"
+                                        className="text-[11px] font-medium text-red-600 px-3"
                                     >
                                         {emailError}
                                     </span>
                                 )}
                             </div>
 
-                            {/* Código de 6 dígitos em blocos/quadrados */}
+                            {/* Código de 6 dígitos em blocos */}
                             <div className="flex flex-col gap-1.5">
                                 <div className="flex items-center justify-between">
                                     <label
                                         id="code-boxes-label"
-                                        className="text-xs uppercase tracking-widest text-neutral-300 font-medium"
+                                        className="text-xs uppercase tracking-wider text-black font-bold"
                                     >
                                         Código de verificação
                                     </label>
@@ -323,12 +326,8 @@ function ResetPasswordFormContent() {
                                             onKeyDown={(e) => handleDigitKeyDown(i, e)}
                                             onPaste={handleDigitPaste}
                                             onFocus={(e) => e.target.select()}
-                                            className={`h-11 w-full min-w-0 border bg-[#1c1c1c] text-center text-lg font-medium text-[#eaeaea] outline-none transition focus:border-[#ff6a00] disabled:cursor-not-allowed disabled:opacity-40 sm:h-12 sm:text-xl ${
-                                                codeError
-                                                    ? 'border-red-500'
-                                                    : digit
-                                                    ? 'border-[#ff6a00]/60'
-                                                    : 'border-[#333]'
+                                            className={`h-12 w-full rounded-2xl border bg-[#F2F0F1] text-center text-lg font-bold text-black outline-none transition focus:border-black/30 focus:bg-white disabled:opacity-40 ${
+                                                codeError ? 'border-red-500 bg-red-50' : 'border-transparent'
                                             }`}
                                         />
                                     ))}
@@ -338,7 +337,7 @@ function ResetPasswordFormContent() {
                                     <span
                                         id="code-error"
                                         role="alert"
-                                        className="text-[11px] uppercase tracking-wider text-red-500"
+                                        className="text-[11px] font-medium text-red-600 px-3"
                                     >
                                         {codeError}
                                     </span>
@@ -349,7 +348,7 @@ function ResetPasswordFormContent() {
                             <div className="flex flex-col gap-1.5">
                                 <label
                                     htmlFor="newPassword"
-                                    className="text-xs uppercase tracking-widest text-neutral-300 font-medium"
+                                    className="text-xs uppercase tracking-wider text-black font-bold"
                                 >
                                     Nova senha
                                 </label>
@@ -360,7 +359,7 @@ function ResetPasswordFormContent() {
                                         placeholder="••••••••"
                                         autoComplete="new-password"
                                         disabled={loading}
-                                        className={`${inputBase} pr-11 ${
+                                        className={`${inputBase} pr-12 ${
                                             newPasswordError ? inputInvalid : inputOk
                                         }`}
                                         value={newPassword}
@@ -377,22 +376,18 @@ function ResetPasswordFormContent() {
                                         type="button"
                                         onClick={() => setShowNewPassword((prev) => !prev)}
                                         aria-label={showNewPassword ? 'Ocultar nova senha' : 'Exibir nova senha'}
-                                        className="absolute inset-y-0 right-0 flex items-center px-3.5 text-neutral-400 hover:text-[#eaeaea] transition cursor-pointer"
+                                        className="absolute inset-y-0 right-0 flex items-center pr-4 text-neutral-400 hover:text-black transition cursor-pointer"
                                     >
                                         {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                     </button>
                                 </div>
-                                {newPasswordError ? (
+                                {newPasswordError && (
                                     <span
                                         id="new-password-error"
                                         role="alert"
-                                        className="text-[11px] uppercase tracking-wider text-red-500"
+                                        className="text-[11px] font-medium text-red-600 px-3"
                                     >
                                         {newPasswordError}
-                                    </span>
-                                ) : (
-                                    <span className="text-[11px] uppercase tracking-wider text-neutral-500">
-                                        Mínimo de 8 caracteres, sem espaços.
                                     </span>
                                 )}
                             </div>
@@ -401,7 +396,7 @@ function ResetPasswordFormContent() {
                             <div className="flex flex-col gap-1.5">
                                 <label
                                     htmlFor="confirmPassword"
-                                    className="text-xs uppercase tracking-widest text-neutral-300 font-medium"
+                                    className="text-xs uppercase tracking-wider text-black font-bold"
                                 >
                                     Confirmar nova senha
                                 </label>
@@ -412,7 +407,7 @@ function ResetPasswordFormContent() {
                                         placeholder="••••••••"
                                         autoComplete="new-password"
                                         disabled={loading}
-                                        className={`${inputBase} pr-11 ${
+                                        className={`${inputBase} pr-12 ${
                                             confirmPasswordError ? inputInvalid : inputOk
                                         }`}
                                         value={confirmPassword}
@@ -435,7 +430,7 @@ function ResetPasswordFormContent() {
                                         type="button"
                                         onClick={() => setShowConfirmPassword((prev) => !prev)}
                                         aria-label={showConfirmPassword ? 'Ocultar confirmação' : 'Exibir confirmação'}
-                                        className="absolute inset-y-0 right-0 flex items-center px-3.5 text-neutral-400 hover:text-[#eaeaea] transition cursor-pointer"
+                                        className="absolute inset-y-0 right-0 flex items-center pr-4 text-neutral-400 hover:text-black transition cursor-pointer"
                                     >
                                         {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                     </button>
@@ -444,28 +439,27 @@ function ResetPasswordFormContent() {
                                     <span
                                         id="confirm-password-error"
                                         role="alert"
-                                        className="text-[11px] uppercase tracking-wider text-red-500"
+                                        className="text-[11px] font-medium text-red-600 px-3"
                                     >
                                         {confirmPasswordError}
                                     </span>
                                 )}
                             </div>
 
-                            {/* Alerta de erro geral */}
                             {formError && (
                                 <div
                                     role="alert"
-                                    className="mt-1 border border-red-500/50 bg-red-950/20 p-3 text-[11px] uppercase tracking-wider text-red-400"
+                                    className="p-3 rounded-2xl bg-red-50 text-xs text-red-600 font-medium"
                                 >
                                     <p>{formError}</p>
                                     {isExpiredOrInvalidCode && (
-                                        <div className="mt-2.5 pt-2 border-t border-red-500/30">
+                                        <div className="mt-2 pt-2 border-t border-red-200">
                                             <Link
                                                 href={`/esqueceu-senha`}
-                                                className="inline-flex items-center gap-1.5 font-medium text-[#ff6a00] hover:underline normal-case"
+                                                className="inline-flex items-center gap-1.5 font-bold text-black hover:underline"
                                             >
                                                 <RotateCcw size={14} />
-                                                Solicitar um novo código de verificação
+                                                Solicitar um novo código
                                             </Link>
                                         </div>
                                     )}
@@ -475,18 +469,18 @@ function ResetPasswordFormContent() {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="mt-2 h-11 w-full rounded-none bg-[#ff6a00] text-xs font-medium uppercase tracking-widest text-[#161616] transition hover:brightness-110 active:brightness-95 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                                className="mt-3 h-12 w-full rounded-full bg-black text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-neutral-800 active:scale-[0.99] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
-                                {loading ? 'Redefinindo senha...' : 'Redefinir senha'}
+                                {loading ? 'Redefinindo...' : 'Redefinir Senha'} <ArrowRight size={16} />
                             </button>
                         </form>
                     )}
 
-                    <div className="mt-6 pt-4 border-t border-[#333] flex items-center justify-between text-xs uppercase tracking-wider text-neutral-400">
+                    <div className="mt-6 pt-4 border-t border-black/10 flex items-center justify-between text-xs text-neutral-600">
                         <span>Não recebeu o código?</span>
                         <Link
                             href="/esqueceu-senha"
-                            className="font-medium text-[#ff6a00] hover:underline underline-offset-4"
+                            className="font-bold text-black underline underline-offset-4 hover:opacity-80"
                         >
                             Solicitar novo
                         </Link>
@@ -499,7 +493,7 @@ function ResetPasswordFormContent() {
 
 export default function ResetPasswordForm() {
     return (
-        <Suspense fallback={<div className="min-h-screen bg-[#121212]" />}>
+        <Suspense fallback={<div className="min-h-screen bg-white" />}>
             <ResetPasswordFormContent />
         </Suspense>
     )

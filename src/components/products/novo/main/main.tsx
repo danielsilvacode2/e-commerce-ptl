@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from "react";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, ArrowRight } from "lucide-react";
 
 import ProductCreateService, { type ProductCreateRequest } from "@/src/actions/product/create_product";
 import { uploadToImgBB } from "@/src/actions/imageUp/uploadImage";
@@ -15,7 +15,6 @@ const emptyForm: Record<TextField, string> = { name: "", sku: "", description: "
 
 const parsePrice = (v: string) => Number(v.trim().replace(",", "."));
 
-/* ---------- Validações ---------- */
 const validators: Record<TextField, (v: string) => string> = {
     name: (v) => (v.trim().length < 2 ? "O nome deve ter pelo menos 2 caracteres." : ""),
     sku: (v) => (/^[\w.-]+$/.test(v.trim()) ? "" : "SKU obrigatório"),
@@ -30,15 +29,12 @@ const validateImage = (f: File | null) =>
     : f.size > MAX_IMAGE_SIZE ? "A imagem deve ter no máximo 5 MB."
     : "";
 
-/* ---------- Componentes ---------- */
-const errorCls = "text-[11px] uppercase tracking-wider text-red-500";
-
 function FormField({ id, label, error, children }: { id: Field; label: string; error?: string; children: ReactNode }) {
     return (
         <div className="flex flex-col gap-1.5">
-            <label htmlFor={id} className="text-xs uppercase tracking-widest text-neutral-300 font-medium">{label}</label>
+            <label htmlFor={id} className="text-xs uppercase tracking-wider text-black font-bold">{label}</label>
             {children}
-            {error && <span id={`${id}-error`} role="alert" className={errorCls}>{error}</span>}
+            {error && <span id={`${id}-error`} role="alert" className="text-xs text-red-600 font-medium px-3">{error}</span>}
         </div>
     );
 }
@@ -103,10 +99,9 @@ export default function MainNovoProducts() {
         }
     }
 
-  
-    const inputCls = (f: Field, extra = "h-11") =>
-        `w-full rounded-none border bg-[#1c1c1c] px-3.5 text-sm text-[#eaeaea] placeholder:text-neutral-500 outline-none transition font-inter focus:ring-1 ${extra} ${
-            errors[f] ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "border-[#333] focus:border-[#ff6a00] focus:ring-[#ff6a00]"
+    const inputCls = (f: Field, extra = "h-12") =>
+        `w-full rounded-full border bg-[#F2F0F1] px-5 text-sm text-black placeholder:text-neutral-500 outline-none transition font-sans ${extra} ${
+            errors[f] ? "border-red-500 bg-red-50 focus:border-red-500" : "border-transparent focus:border-black/20 focus:bg-white"
         }`;
 
     const bind = (f: TextField) => ({
@@ -126,54 +121,51 @@ export default function MainNovoProducts() {
     const showPreview = previewUrl && !errors.image && !imageBroken;
 
     return (
-        <main className="flex-1 flex items-start justify-center px-6 py-10 md:py-14">
-            <div className="w-full max-w-[460px]">
-                <h2 className="font-['Barlow_Condensed',Impact,sans-serif] text-3xl font-bold uppercase tracking-wide">
-                    Cadastrar produto
+        <main className="flex-1 flex items-start justify-center px-6 py-10 md:py-14 font-sans text-black">
+            <div className="w-full max-w-[500px]">
+                <h2 className="font-display text-3xl sm:text-4xl font-extrabold uppercase tracking-tight text-black">
+                    CADASTRAR NOVO PRODUTO
                 </h2>
-                <p className="mt-1.5 text-xs text-neutral-400 uppercase tracking-wider">
-                    Preencha os dados para adicionar o produto à loja.
+                <p className="mt-2 text-sm text-neutral-600 font-sans">
+                    Preencha os dados do item para adicioná-lo ao catálogo da loja.
                 </p>
 
                 {success && (
-                    <div role="status" className="mt-5 flex items-start gap-2.5 border border-emerald-500/40 bg-emerald-500/10 px-3.5 py-3 text-xs uppercase tracking-wider text-emerald-400">
-                        <CheckCircle2 size={16} className="shrink-0" />
-                        Produto cadastrado com sucesso.
+                    <div role="status" className="mt-6 flex items-center gap-3 rounded-2xl bg-emerald-50 border border-emerald-200 p-4 text-xs font-medium text-emerald-700">
+                        <CheckCircle2 size={18} className="shrink-0" />
+                        Produto cadastrado com sucesso e adicionado ao catálogo!
                     </div>
                 )}
 
-                <form className="mt-6 flex flex-col gap-5" noValidate onSubmit={(e) => { e.preventDefault(); onSubmit(); }}>
-                    <FormField id="name" label="Nome" error={errors.name}>
-                        <input type="text" placeholder="Nome do produto" className={inputCls("name")} {...bind("name")} />
+                <form className="mt-8 flex flex-col gap-5" noValidate onSubmit={(e) => { e.preventDefault(); onSubmit(); }}>
+                    <FormField id="name" label="Nome do Produto" error={errors.name}>
+                        <input type="text" placeholder="Ex: Camiseta Streetwear Minimalista" className={inputCls("name")} {...bind("name")} />
                     </FormField>
 
-                    <div className="grid gap-5 sm:grid-cols-3">
+                    <div className="grid gap-4 sm:grid-cols-3">
                         <FormField id="sku" label="SKU" error={errors.sku}>
                             <input type="text" placeholder="TEE-BLK-M" className={inputCls("sku")} {...bind("sku")} />
                         </FormField>
 
-                        <FormField id="price" label="Preço" error={errors.price}>
-                            <div className="relative">
-                                <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-sm text-neutral-500">$</span>
-                                <input type="text" inputMode="decimal" placeholder="0.00" className={`${inputCls("price")} pl-7`} {...bind("price")} />
-                            </div>
+                        <FormField id="price" label="Preço (R$)" error={errors.price}>
+                            <input type="text" inputMode="decimal" placeholder="180.00" className={inputCls("price")} {...bind("price")} />
                         </FormField>
 
-                        <FormField id="quantity" label="Qtd." error={errors.quantity}>
-                            <input type="text" inputMode="numeric" placeholder="0" className={inputCls("quantity")} {...bind("quantity")} />
+                        <FormField id="quantity" label="Qtd. Estoque" error={errors.quantity}>
+                            <input type="text" inputMode="numeric" placeholder="50" className={inputCls("quantity")} {...bind("quantity")} />
                         </FormField>
                     </div>
 
                     <FormField id="description" label="Descrição" error={errors.description}>
                         <textarea
                             rows={4}
-                            placeholder="Materiais, tamanho, o que o torna especial..."
-                            className={`${inputCls("description", "py-2.5")} resize-y`}
+                            placeholder="Descreva detalhes como corte, caimento, composição de algodão..."
+                            className="w-full rounded-2xl border border-transparent bg-[#F2F0F1] p-4 text-sm text-black placeholder:text-neutral-500 outline-none focus:border-black/20 focus:bg-white resize-y"
                             {...bind("description")}
                         />
                     </FormField>
 
-                    <FormField id="image" label="Imagem" error={errors.image}>
+                    <FormField id="image" label="Imagem do Produto" error={errors.image}>
                         <input
                             ref={fileInputRef}
                             id="image"
@@ -181,28 +173,34 @@ export default function MainNovoProducts() {
                             accept={IMAGE_TYPES.join(",")}
                             aria-invalid={!!errors.image}
                             aria-describedby={errors.image ? "image-error" : undefined}
-                            className={`${inputCls("image", "h-11 py-2")} cursor-pointer file:mr-3 file:cursor-pointer file:rounded-none file:border-0 file:bg-[#333] file:px-3 file:py-1 file:text-xs file:uppercase file:tracking-wider file:text-[#eaeaea] hover:file:bg-[#444]`}
+                            className="w-full text-xs text-neutral-600 file:mr-4 file:py-2.5 file:px-5 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-black file:text-white hover:file:bg-neutral-800 cursor-pointer"
                             onChange={onFileChange}
                         />
                         {showPreview && (
-                            <img
-                                src={previewUrl}
-                                alt="Pré-visualização do produto"
-                                onError={() => setImageBroken(true)}
-                                className="mt-1 h-32 w-32 border border-[#333] object-cover"
-                            />
+                            <div className="mt-2 h-36 w-36 rounded-2xl bg-[#F2F0F1] p-2 overflow-hidden flex items-center justify-center">
+                                <img
+                                    src={previewUrl}
+                                    alt="Pré-visualização"
+                                    onError={() => setImageBroken(true)}
+                                    className="h-full w-full object-contain mix-blend-multiply"
+                                />
+                            </div>
                         )}
-                        {imageBroken && <span className={errorCls}>Não foi possível carregar a pré-visualização.</span>}
+                        {imageBroken && <span className="text-xs text-red-600">Não foi possível carregar a pré-visualização.</span>}
                     </FormField>
 
-                    {formError && <span role="alert" className={errorCls}>{formError}</span>}
+                    {formError && (
+                        <div role="alert" className="p-3 rounded-2xl bg-red-50 text-xs text-red-600 font-medium">
+                            {formError}
+                        </div>
+                    )}
 
                     <button
                         type="submit"
                         disabled={loading}
-                        className="mt-2 h-11 rounded-none bg-[#ff6a00] text-xs font-medium uppercase tracking-widest text-[#161616] transition hover:brightness-110 active:brightness-95 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="mt-4 h-12 rounded-full bg-black text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-neutral-800 active:scale-[0.99] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm"
                     >
-                        {loading ? "Salvando..." : "Cadastrar produto"}
+                        {loading ? "Gravando produto..." : "Cadastrar Produto"} <ArrowRight size={16} />
                     </button>
                 </form>
             </div>
