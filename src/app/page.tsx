@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import ProductReadAllService, { ProductResponse } from '@/src/actions/product/read_all_request'
 import ReadCart, { CartResponse } from '@/src/actions/cart/read_all'
+import ReadMe from '@/src/actions/me/readMe'
+import { guestCartService } from '@/src/services/guest-cart'
 import HeroHome from '../components/home/hero/hero'
 import HeaderHome from '../components/home/header/header'
 import ArticleHome from '../components/home/article/article'
@@ -39,10 +41,17 @@ export default function StorePage() {
 
   const loadCart = useCallback(async () => {
     try {
-      const res = await ReadCart()
-      setCart(res)
+      const user = await ReadMe()
+      if (user) {
+        const res = await ReadCart()
+        setCart(res)
+      } else {
+        const guest = guestCartService.toCartResponse()
+        setCart(guest)
+      }
     } catch {
-      setCart(null)
+      const guest = guestCartService.toCartResponse()
+      setCart(guest)
     }
   }, [])
 

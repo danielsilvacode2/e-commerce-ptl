@@ -20,6 +20,7 @@ function VerifyEmailContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const email = searchParams.get('email') ?? ''
+    const redirectUrl = searchParams.get('redirect')
 
     const [digits, setDigits] = useState<string[]>(Array(CODE_LENGTH).fill(''))
     const [loading, setLoading] = useState(false)
@@ -135,7 +136,8 @@ function VerifyEmailContent() {
         try {
             await VerifyEmailCodeService(email, code)
             setSuccess(true)
-            setTimeout(() => router.push(REDIRECT_AFTER_SUCCESS), 1500)
+            const targetLogin = redirectUrl ? `/login?redirect=${encodeURIComponent(redirectUrl)}` : REDIRECT_AFTER_SUCCESS
+            setTimeout(() => router.push(targetLogin), 1500)
         } catch (err) {
             console.log('erro ao verificar código: ' + err)
             const message = err instanceof Error ? err.message : ''

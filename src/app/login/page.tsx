@@ -1,6 +1,8 @@
 'use client'
 
 import LoginService from "@/src/actions/auth/login_request"
+import { cartSyncService } from "@/src/services/cart-sync"
+import { guestCartService } from "@/src/services/guest-cart"
 import Link from "next/link"
 import { CheckCircle2, Eye, EyeOff, ArrowRight } from "lucide-react"
 import { Suspense, useState } from "react"
@@ -10,6 +12,7 @@ function LoginFormContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const isResetSuccess = searchParams.get("reset") === "success"
+    const redirectUrl = searchParams.get("redirect")
 
     const [email, setEmail] = useState<string>("")
     const [password, setPassword] = useState<string>("")
@@ -19,6 +22,7 @@ function LoginFormContent() {
     const [emailError, setEmailError] = useState<string>("")
     const [passwordError, setPasswordError] = useState<string>("")
     const [errLogin, setErrLogin] = useState<string>("")
+    const [syncWarning, setSyncWarning] = useState<string>("")
 
     function validateEmail(value: string): string {
         const trimmed = value.trim()
@@ -41,13 +45,31 @@ function LoginFormContent() {
         setEmailError(emailMsg)
         setPasswordError(passwordMsg)
         setErrLogin("")
+        setSyncWarning("")
 
         if (emailMsg || passwordMsg) return
 
         setLoading(true)
         try {
             await LoginService(email.trim(), password)
-            router.push("/")
+
+            const hadGuestItems = guestCartService.getRawCart().items.length > 0
+            if (hadGuestItems) {
+                const syncResult = await cartSyncService.syncGuestCartToUser()
+                if (syncResult.errors.length > 0) {
+                    setSyncWarning(
+                        `Alguns itens não puderam ser sincronizados: ${syncResult.errors.join("; ")}`
+                    )
+                }
+            }
+
+            if (redirectUrl) {
+                router.push(redirectUrl)
+            } else if (hadGuestItems) {
+                router.push("/carrinho")
+            } else {
+                router.push("/")
+            }
         } catch {
             setErrLogin("Senha ou e-mail inválido")
         } finally {
@@ -208,6 +230,12 @@ function LoginFormContent() {
                             </div>
                         )}
 
+                        {syncWarning && (
+                            <div role="alert" className="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-700 font-medium">
+                                {syncWarning}
+                            </div>
+                        )}
+
                         <button
                             type="submit"
                             disabled={loading}
@@ -220,7 +248,7 @@ function LoginFormContent() {
                     <p className="mt-8 text-center text-sm text-neutral-600">
                         Não tem uma conta?{" "}
                         <Link
-                            href="/sign"
+                            href={redirectUrl ? `/sign?redirect=${encodeURIComponent(redirectUrl)}` : "/sign"}
                             className="font-bold text-black underline underline-offset-4 hover:opacity-80"
                         >
                             Cadastre-se agora

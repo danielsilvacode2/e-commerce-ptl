@@ -29,7 +29,7 @@ export default function NewProductPage() {
     }
 
     return (
-        <div className="min-h-screen w-full flex flex-col md:flex-row bg-white font-sans text-black">
+        <div className="min-h-screen w-full flex flex-col md:flex-row bg-white dark:bg-[#121212] font-sans text-black dark:text-white transition-colors">
             <NavProducts active="new" />
             <MainNovoProducts />
         </div>

@@ -5,15 +5,16 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import ReadMe, { UserResponse } from '@/src/actions/me/readMe'
 import ReadCart, { CartResponse } from '@/src/actions/cart/read_all'
+import { guestCartService, GUEST_CART_STORAGE_KEY, GUEST_CART_EVENT } from '@/src/services/guest-cart'
 import { ShoppingBag, Search, Menu, X, ArrowRight } from 'lucide-react'
 import ThemeToggle from '@/src/components/theme/theme-toggle'
+import SearchBar from '@/src/components/home/search/search-bar'
 
 interface HeaderHomeProps {
   refreshKey?: number
 }
 
 export default function HeaderHome({ refreshKey = 0 }: HeaderHomeProps) {
-  const [search, setSearch] = useState('')
   const [user, setUser] = useState<UserResponse | null>(null)
   const [painelAdmin, setPainelAdmin] = useState<boolean>(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -32,19 +33,50 @@ export default function HeaderHome({ refreshKey = 0 }: HeaderHomeProps) {
 
   useEffect(() => {
     let cancelled = false
-    ReadCart()
-      .then((res) => {
-        if (!cancelled) setCart(res)
-      })
-      .catch((err) => {
-        if (!cancelled) setCart(null)
-        console.log('erro ao carregar carrinho', err)
-      })
+
+    async function fetchCart() {
+      try {
+        const dataUser = await ReadMe()
+        if (cancelled) return
+        if (dataUser) {
+          const res = await ReadCart()
+          if (!cancelled) setCart(res)
+        } else {
+          const guest = guestCartService.toCartResponse()
+          if (!cancelled) setCart(guest)
+        }
+      } catch {
+        if (!cancelled) {
+          const guest = guestCartService.toCartResponse()
+          setCart(guest)
+        }
+      }
+    }
+
+    fetchCart()
+
+    function handleGuestCartUpdate() {
+      if (!user) {
+        const guest = guestCartService.toCartResponse()
+        setCart(guest)
+      }
+    }
+
+    function handleStorage(e: StorageEvent) {
+      if (e.key === GUEST_CART_STORAGE_KEY && !user) {
+        handleGuestCartUpdate()
+      }
+    }
+
+    window.addEventListener(GUEST_CART_EVENT, handleGuestCartUpdate)
+    window.addEventListener('storage', handleStorage)
 
     return () => {
       cancelled = true
+      window.removeEventListener(GUEST_CART_EVENT, handleGuestCartUpdate)
+      window.removeEventListener('storage', handleStorage)
     }
-  }, [refreshKey])
+  }, [refreshKey, user])
 
   const totalCartItems = cart?.list?.reduce((acc, item) => acc + (item.quantity || 1), 0) ?? 0
 
@@ -88,12 +120,6 @@ export default function HeaderHome({ refreshKey = 0 }: HeaderHomeProps) {
             <Link href="/" className="hover:text-black dark:hover:text-white transition-colors">
               Início
             </Link>
-            <a href="#novidades" className="hover:text-black dark:hover:text-white transition-colors">
-              Novidades
-            </a>
-            <a href="#destaques" className="hover:text-black dark:hover:text-white transition-colors">
-              Mais Vendidos
-            </a>
             {user && (
               <Link href="/pedidos" className="hover:text-black dark:hover:text-white transition-colors">
                 Meus Pedidos
@@ -108,15 +134,10 @@ export default function HeaderHome({ refreshKey = 0 }: HeaderHomeProps) {
 
           {/* Search bar em formato pílula */}
           <div className="relative hidden sm:flex flex-1 max-w-md mx-2">
-            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400">
-              <Search className="h-4 w-4" />
-            </span>
-            <input
-              type="search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+            <SearchBar
               placeholder="Buscar produtos, marcas e estilos..."
-              className="h-11 w-full rounded-full bg-[#F2F0F1] dark:bg-[#1f1f1f] pl-11 pr-5 text-sm text-black dark:text-white placeholder:text-neutral-500 outline-none border border-transparent focus:border-black/20 dark:focus:border-white/20 focus:bg-white dark:focus:bg-[#181818] transition-all"
+              iconClassName="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400"
+              inputClassName="h-11 w-full rounded-full bg-[#F2F0F1] dark:bg-[#1f1f1f] pl-11 pr-5 text-sm text-black dark:text-white placeholder:text-neutral-500 outline-none border border-transparent focus:border-black/20 dark:focus:border-white/20 focus:bg-white dark:focus:bg-[#181818] transition-all"
             />
           </div>
 
@@ -187,16 +208,11 @@ export default function HeaderHome({ refreshKey = 0 }: HeaderHomeProps) {
         {/* Mobile Search Input */}
         <div className="px-4 pb-3 sm:hidden">
           <div className="relative w-full">
-            <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400">
-              <Search className="h-4 w-4" />
-            </span>
-            <input
-              id="search-input-mobile"
-              type="search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+            <SearchBar
+              inputId="search-input-mobile"
               placeholder="Buscar produtos..."
-              className="h-10 w-full rounded-full bg-[#F2F0F1] dark:bg-[#1f1f1f] pl-10 pr-4 text-xs text-black dark:text-white placeholder:text-neutral-500 outline-none border border-transparent focus:border-black/20 dark:focus:border-white/20 focus:bg-white dark:focus:bg-[#181818] transition-all"
+              iconClassName="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400"
+              inputClassName="h-10 w-full rounded-full bg-[#F2F0F1] dark:bg-[#1f1f1f] pl-10 pr-4 text-xs text-black dark:text-white placeholder:text-neutral-500 outline-none border border-transparent focus:border-black/20 dark:focus:border-white/20 focus:bg-white dark:focus:bg-[#181818] transition-all"
             />
           </div>
         </div>
@@ -212,20 +228,6 @@ export default function HeaderHome({ refreshKey = 0 }: HeaderHomeProps) {
               >
                 Início
               </Link>
-              <a
-                href="#novidades"
-                onClick={() => setMenuOpen(false)}
-                className="py-2 text-neutral-700 dark:text-neutral-300 border-b border-black/5 dark:border-white/5"
-              >
-                Novidades
-              </a>
-              <a
-                href="#destaques"
-                onClick={() => setMenuOpen(false)}
-                className="py-2 text-neutral-700 dark:text-neutral-300 border-b border-black/5 dark:border-white/5"
-              >
-                Mais Vendidos
-              </a>
               {user ? (
                 <>
                   <Link

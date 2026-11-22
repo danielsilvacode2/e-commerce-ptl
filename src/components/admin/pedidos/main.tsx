@@ -90,15 +90,15 @@ export default function AdminOrdersClient() {
     }
 
     return (
-        <main className="min-h-screen flex-1 bg-white px-6 py-8 font-sans text-black">
+        <main className="min-h-screen flex-1 bg-white dark:bg-[#121212] px-6 py-8 font-sans text-black dark:text-white transition-colors">
             <div className="mx-auto w-full max-w-5xl">
                 {/* Cabeçalho */}
-                <header className="flex flex-wrap items-end justify-between gap-4 border-b border-black/10 pb-6">
+                <header className="flex flex-wrap items-end justify-between gap-4 border-b border-black/10 dark:border-white/10 pb-6">
                     <div>
-                        <h1 className="font-display text-3xl font-extrabold uppercase tracking-tight text-black">
+                        <h1 className="font-display text-3xl font-extrabold uppercase tracking-tight text-black dark:text-white">
                             GERENCIAR PEDIDOS
                         </h1>
-                        <p className="mt-1 text-sm text-neutral-600 font-sans">
+                        <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400 font-sans">
                             Visualize pedidos dos clientes e gerencie suas etapas de envio.
                         </p>
                     </div>
@@ -108,7 +108,7 @@ export default function AdminOrdersClient() {
                 </header>
 
                 {/* Filtros em Abas Pílula + Busca por User ID */}
-                <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-b border-black/10 pb-6">
+                <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-b border-black/10 dark:border-white/10 pb-6">
                     <div className="flex flex-wrap gap-2">
                         {FILTER_TABS.map((tab) => {
                             const isActive = statusFilter === tab.value
@@ -119,8 +119,8 @@ export default function AdminOrdersClient() {
                                     onClick={() => handleFilterChange(tab.value)}
                                     className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer ${
                                         isActive
-                                            ? 'bg-black text-white'
-                                            : 'bg-[#F2F0F1] text-neutral-700 hover:bg-neutral-200'
+                                            ? 'bg-black text-white dark:bg-white dark:text-black'
+                                            : 'bg-[#F2F0F1] dark:bg-[#1f1f1f] text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-[#282828]'
                                     }`}
                                 >
                                     {tab.label}
@@ -141,27 +141,27 @@ export default function AdminOrdersClient() {
                                 setPage(1)
                             }}
                             placeholder="Filtrar por User ID..."
-                            className="h-10 w-full rounded-full border border-transparent bg-[#F2F0F1] pl-10 pr-4 text-xs font-mono text-black outline-none placeholder:font-sans placeholder:text-neutral-500 focus:border-black/20 focus:bg-white"
+                            className="h-10 w-full rounded-full border border-transparent bg-[#F2F0F1] dark:bg-[#1f1f1f] pl-10 pr-4 text-xs font-mono text-black dark:text-white outline-none placeholder:font-sans placeholder:text-neutral-500 focus:border-black/20 dark:focus:border-white/20 focus:bg-white dark:focus:bg-[#181818]"
                         />
                     </div>
                 </div>
 
                 {loading && (
                     <div className="flex items-center justify-center py-16">
-                        <Loader2 size={24} className="animate-spin text-black" />
+                        <Loader2 size={24} className="animate-spin text-black dark:text-white" />
                     </div>
                 )}
 
                 {error && (
-                    <div className="mt-6 p-4 rounded-2xl bg-red-50 text-red-600 text-xs font-medium border border-red-200">
+                    <div className="mt-6 p-4 rounded-2xl bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 text-xs font-medium border border-red-200 dark:border-red-900/50">
                         {error}
                     </div>
                 )}
 
                 {!loading && !error && orders.length === 0 && (
-                    <div className="mt-8 rounded-3xl bg-[#F2F0F1] p-12 text-center">
+                    <div className="mt-8 rounded-3xl bg-[#F2F0F1] dark:bg-[#181818] p-12 text-center">
                         <ShoppingBag size={36} className="mx-auto text-neutral-400 mb-3" />
-                        <p className="text-sm font-semibold uppercase tracking-wider text-black">
+                        <p className="text-sm font-semibold uppercase tracking-wider text-black dark:text-white">
                             Nenhum pedido encontrado.
                         </p>
                     </div>
@@ -178,14 +178,14 @@ export default function AdminOrdersClient() {
                                 return (
                                     <li
                                         key={order.id}
-                                        className="rounded-3xl border border-black/10 bg-white p-5 sm:p-6 transition-all hover:border-black/30 hover:shadow-sm"
+                                        className="rounded-3xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#181818] p-5 sm:p-6 transition-all hover:border-black/30 dark:hover:border-white/30 hover:shadow-sm"
                                     >
-                                        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-black/10 pb-4">
+                                        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-black/10 dark:border-white/10 pb-4">
                                             <div>
-                                                <span className="font-mono text-xs font-bold text-black">
+                                                <span className="font-mono text-xs font-bold text-black dark:text-white">
                                                     PEDIDO #{order.id}
                                                 </span>
-                                                <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-neutral-500 font-sans">
+                                                <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-neutral-500 dark:text-neutral-400 font-sans">
                                                     <span className="flex items-center gap-1.5">
                                                         <Calendar size={12} />
                                                         {formatDate(order.created_at)}
@@ -198,18 +198,18 @@ export default function AdminOrdersClient() {
                                                 </div>
                                             </div>
 
-                                            <span className="rounded-full bg-[#F2F0F1] px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-black">
+                                            <span className="rounded-full bg-[#F2F0F1] dark:bg-[#252525] px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-black dark:text-white">
                                                 {statusConfig.label}
                                             </span>
                                         </div>
 
                                         <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
                                             <div>
-                                                <p className="flex items-center gap-1.5 text-xs text-neutral-700 font-medium">
+                                                <p className="flex items-center gap-1.5 text-xs text-neutral-700 dark:text-neutral-300 font-medium">
                                                     <User size={13} className="text-neutral-400" />
-                                                    Cliente: <strong className="text-black">{order.user?.name || 'Não informado'}</strong> ({order.user?.email || '—'})
+                                                    Cliente: <strong className="text-black dark:text-white">{order.user?.name || 'Não informado'}</strong> ({order.user?.email || '—'})
                                                 </p>
-                                                <p className="mt-1 text-xs text-neutral-500">
+                                                <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
                                                     {totalItems} {totalItems === 1 ? 'item' : 'itens'} no total
                                                 </p>
                                             </div>
@@ -219,14 +219,14 @@ export default function AdminOrdersClient() {
                                                     <span className="block text-[10px] uppercase tracking-wider text-neutral-500">
                                                         Valor
                                                     </span>
-                                                    <span className="font-display font-bold text-base text-black">
+                                                    <span className="font-display font-bold text-base text-black dark:text-white">
                                                         {formatPrice(order.total)}
                                                     </span>
                                                 </div>
 
                                                 <Link
                                                     href={`/admin/pedidos/${order.id}`}
-                                                    className="flex h-10 items-center gap-1.5 rounded-full border border-black/15 px-5 text-xs font-semibold uppercase tracking-wider text-black hover:bg-[#F2F0F1] transition-colors"
+                                                    className="flex h-10 items-center gap-1.5 rounded-full border border-black/15 dark:border-white/20 px-5 text-xs font-semibold uppercase tracking-wider text-black dark:text-white hover:bg-[#F2F0F1] dark:hover:bg-[#252525] transition-colors"
                                                 >
                                                     Gerenciar
                                                     <ArrowUpRight size={14} />
@@ -248,20 +248,20 @@ export default function AdminOrdersClient() {
                                     type="button"
                                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                                     disabled={page <= 1}
-                                    className="h-10 px-4 rounded-full border border-black/15 text-xs font-semibold uppercase tracking-wider hover:bg-[#F2F0F1] disabled:opacity-40 transition-colors"
+                                    className="h-10 px-4 rounded-full border border-black/15 dark:border-white/20 text-xs font-semibold uppercase tracking-wider text-black dark:text-white hover:bg-[#F2F0F1] dark:hover:bg-[#252525] disabled:opacity-40 transition-colors"
                                 >
                                     <ChevronLeft size={16} className="inline mr-1" /> Anterior
                                 </button>
 
-                                <span className="text-xs text-neutral-600 font-sans font-medium px-2">
-                                    Página <strong className="text-black">{page}</strong> de {totalPages}
+                                <span className="text-xs text-neutral-600 dark:text-neutral-400 font-sans font-medium px-2">
+                                    Página <strong className="text-black dark:text-white">{page}</strong> de {totalPages}
                                 </span>
 
                                 <button
                                     type="button"
                                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                                     disabled={page >= totalPages}
-                                    className="h-10 px-4 rounded-full border border-black/15 text-xs font-semibold uppercase tracking-wider hover:bg-[#F2F0F1] disabled:opacity-40 transition-colors"
+                                    className="h-10 px-4 rounded-full border border-black/15 dark:border-white/20 text-xs font-semibold uppercase tracking-wider text-black dark:text-white hover:bg-[#F2F0F1] dark:hover:bg-[#252525] disabled:opacity-40 transition-colors"
                                 >
                                     Próxima <ChevronRight size={16} className="inline ml-1" />
                                 </button>

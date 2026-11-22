@@ -12,6 +12,8 @@ import CreateCart from '@/src/actions/cart/create_cart'
 import RemoveProductCart from '@/src/actions/cart/delete_product_cart'
 import DecreaseProductCart from '@/src/actions/cart/decrease_product_cart'
 import CreateOrderService from '@/src/actions/order/create_order'
+import ReadMe from '@/src/actions/me/readMe'
+import { guestCartService } from '@/src/services/guest-cart'
 
 const REMOVE_DELAY = 2500
 
@@ -41,9 +43,10 @@ interface MainCartProps {
     loading?: boolean
     error?: string
     setCartRefresh: Dispatch<SetStateAction<number>>
+    isGuest?: boolean
 }
 
-export default function MainCart({ list = [], setList, loading = false, error = "", setCartRefresh }: MainCartProps) {
+export default function MainCart({ list = [], setList, loading = false, error = "", setCartRefresh, isGuest = false }: MainCartProps) {
     const router = useRouter()
     const items = list
     const selectedItems = items.filter((i) => i.isSelect)
@@ -100,6 +103,11 @@ export default function MainCart({ list = [], setList, loading = false, error = 
 
         updateList((prev) => prev.map((i) => ({ ...i, isSelect: next })))
 
+        if (isGuest) {
+            guestCartService.toggleSelectAll(next)
+            return
+        }
+
         try {
             await UpdateAllIsSelectCart({ select: next })
         } catch (err) {
@@ -113,6 +121,11 @@ export default function MainCart({ list = [], setList, loading = false, error = 
         updateList((prev) =>
             prev.map((i) => (i.id === item.id ? { ...i, isSelect: next } : i))
         )
+
+        if (isGuest) {
+            guestCartService.toggleSelect(item.product_id, next)
+            return
+        }
 
         try {
             await UpdateIsSelectCart({ id: item.id, select: next })
@@ -142,6 +155,12 @@ export default function MainCart({ list = [], setList, loading = false, error = 
                 prev.map((i) => (i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i))
             )
 
+            if (isGuest) {
+                guestCartService.updateQuantity(item.product_id, item.quantity + 1)
+                if (item.quantity + 1 >= stock) markMaxed(item.id, true)
+                return
+            }
+
             try {
                 await CreateCart({ product_id: item.product_id, quantity: (item.quantity + 1) })
 
@@ -167,6 +186,13 @@ export default function MainCart({ list = [], setList, loading = false, error = 
         updateList((prev) =>
             prev.map((i) => (i.id === item.id ? { ...i, quantity: i.quantity - 1 } : i))
         )
+
+        if (isGuest) {
+            guestCartService.updateQuantity(item.product_id, item.quantity - 1)
+            markMaxed(item.id, false)
+            setUpdatingId(null)
+            return
+        }
 
         try {
             await DecreaseProductCart({ id: item.id, quantity: 1 })
@@ -207,6 +233,12 @@ export default function MainCart({ list = [], setList, loading = false, error = 
         setPending(item.id, false)
         markMaxed(item.id, false)
 
+        if (isGuest) {
+            guestCartService.removeItem(item.product_id)
+            setCartRefresh((v) => v + 1)
+            return
+        }
+
         try {
             await RemoveProductCart(item.id)
             setCartRefresh((v) => v - 1)
@@ -225,9 +257,22 @@ export default function MainCart({ list = [], setList, loading = false, error = 
         }
     }
 
-    function handleOpenCheckout() {
+    async function handleOpenCheckout() {
         if (selectedItems.length === 0) return
         setCheckoutError('')
+
+        // Se for guest ou não logado, redireciona para login preservando intenção de checkout
+        try {
+            const user = await ReadMe()
+            if (!user) {
+                router.push('/login?redirect=/carrinho?checkout=true')
+                return
+            }
+        } catch {
+            router.push('/login?redirect=/carrinho?checkout=true')
+            return
+        }
+
         setCheckoutModalOpen(true)
     }
 

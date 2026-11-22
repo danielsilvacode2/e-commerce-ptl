@@ -3,11 +3,14 @@
 import SignService from "@/src/actions/sign/sign_request"
 import Link from "next/link"
 import { Eye, EyeOff, ArrowRight } from "lucide-react"
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { Suspense, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 
-export default function SignUpPage() {
+function SignUpFormContent() {
     const router = useRouter()
+    const searchParams = useSearchParams()
+    const redirectUrl = searchParams.get("redirect")
+
     const [name, setName] = useState<string>("")
     const [email, setEmail] = useState<string>("")
     const [password, setPassword] = useState<string>("")
@@ -55,7 +58,10 @@ export default function SignUpPage() {
         setLoading(true)
         try {
             await SignService(email.trim(), password, name.trim())
-            router.push(`/verificar-email?email=${encodeURIComponent(email.trim())}`)
+            const dest = `/verificar-email?email=${encodeURIComponent(email.trim())}${
+                redirectUrl ? `&redirect=${encodeURIComponent(redirectUrl)}` : ""
+            }`
+            router.push(dest)
         } catch (err) {
             if (err instanceof Error && err.message === "RATE_LIMIT") {
                 setFormError("Muitas tentativas. Aguarde alguns minutos.")
@@ -244,7 +250,7 @@ export default function SignUpPage() {
                     <p className="mt-8 text-center text-sm text-neutral-600">
                         Já tem uma conta?{" "}
                         <Link
-                            href="/login"
+                            href={redirectUrl ? `/login?redirect=${encodeURIComponent(redirectUrl)}` : "/login"}
                             className="font-bold text-black underline underline-offset-4 hover:opacity-80"
                         >
                             Fazer login
@@ -253,5 +259,13 @@ export default function SignUpPage() {
                 </div>
             </section>
         </main>
+    )
+}
+
+export default function SignUpPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-white" />}>
+            <SignUpFormContent />
+        </Suspense>
     )
 }

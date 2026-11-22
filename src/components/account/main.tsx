@@ -2,6 +2,7 @@
 
 import ReadMe, { UserResponse } from "@/src/actions/me/readMe"
 import LogoutService from "@/src/actions/auth/logout"
+import { guestCartService } from "@/src/services/guest-cart"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
@@ -59,6 +60,8 @@ export default function MainAccount() {
     async function handlerLogout() {
         try {
             await LogoutService()
+            // Garante que o guest cart não receba lixo de usuário logado
+            guestCartService.clearCart()
         } catch (err) {
             console.log("erro ao sair da conta", err)
         } finally {

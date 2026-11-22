@@ -140,8 +140,8 @@ export default function AdminOrderDetailClient({ orderId }: AdminOrderDetailClie
 
     if (loading) {
         return (
-            <main className="min-h-screen flex-1 bg-white px-6 py-12 flex flex-col items-center justify-center font-sans text-black">
-                <Loader2 size={32} className="animate-spin text-black" />
+            <main className="min-h-screen flex-1 bg-white dark:bg-[#121212] px-6 py-12 flex flex-col items-center justify-center font-sans text-black dark:text-white transition-colors">
+                <Loader2 size={32} className="animate-spin text-black dark:text-white" />
                 <p className="mt-4 text-xs font-semibold uppercase tracking-wider text-neutral-500">
                     Carregando detalhes do pedido para o admin...
                 </p>
@@ -151,19 +151,19 @@ export default function AdminOrderDetailClient({ orderId }: AdminOrderDetailClie
 
     if (error || !order) {
         return (
-            <main className="min-h-screen flex-1 bg-white px-6 py-12 font-sans text-black">
-                <div className="mx-auto max-w-4xl rounded-3xl bg-[#F2F0F1] p-8 text-center">
-                    <AlertCircle size={32} className="mx-auto text-black mb-3" />
-                    <h1 className="font-display text-2xl font-bold uppercase tracking-tight text-black">
+            <main className="min-h-screen flex-1 bg-white dark:bg-[#121212] px-6 py-12 font-sans text-black dark:text-white transition-colors">
+                <div className="mx-auto max-w-4xl rounded-3xl bg-[#F2F0F1] dark:bg-[#181818] p-8 text-center">
+                    <AlertCircle size={32} className="mx-auto text-black dark:text-white mb-3" />
+                    <h1 className="font-display text-2xl font-bold uppercase tracking-tight text-black dark:text-white">
                         Não foi possível carregar o pedido
                     </h1>
-                    <p className="mt-2 text-sm text-neutral-600 font-sans">
+                    <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400 font-sans">
                         {error || 'Pedido inexistente ou dados indisponíveis.'}
                     </p>
                     <div className="mt-6 flex justify-center gap-4">
                         <Link
                             href="/admin/pedidos"
-                            className="rounded-full bg-black px-6 py-3 text-xs font-semibold uppercase tracking-wider text-white hover:bg-neutral-800"
+                            className="rounded-full bg-black text-white dark:bg-white dark:text-black px-6 py-3 text-xs font-semibold uppercase tracking-wider hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors"
                         >
                             Voltar para Listagem
                         </Link>
@@ -178,13 +178,13 @@ export default function AdminOrderDetailClient({ orderId }: AdminOrderDetailClie
     const isFinal = isFinalStatus(order.status)
 
     return (
-        <main className="min-h-screen flex-1 bg-white px-6 py-8 font-sans text-black">
+        <main className="min-h-screen flex-1 bg-white dark:bg-[#121212] px-6 py-8 font-sans text-black dark:text-white transition-colors">
             <div className="mx-auto max-w-4xl">
                 {/* Voltar */}
-                <div className="border-b border-black/10 pb-4 mb-8">
+                <div className="border-b border-black/10 dark:border-white/10 pb-4 mb-8">
                     <Link
                         href="/admin/pedidos"
-                        className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-neutral-600 hover:text-black transition-colors"
+                        className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white transition-colors"
                     >
                         <ArrowLeft size={16} />
                         Voltar para Pedidos (Admin)
@@ -192,19 +192,19 @@ export default function AdminOrderDetailClient({ orderId }: AdminOrderDetailClie
                 </div>
 
                 {/* Header do Pedido */}
-                <div className="rounded-3xl bg-[#F2F0F1] p-6 sm:p-8">
+                <div className="rounded-3xl bg-[#F2F0F1] dark:bg-[#181818] p-6 sm:p-8">
                     <div className="flex flex-wrap items-start justify-between gap-4">
                         <div>
                             <span className="text-xs uppercase tracking-wider text-neutral-500 font-bold">
                                 PEDIDO #{order.id}
                             </span>
-                            <h1 className="mt-1 font-display text-3xl sm:text-4xl font-extrabold uppercase tracking-tight text-black">
+                            <h1 className="mt-1 font-display text-3xl sm:text-4xl font-extrabold uppercase tracking-tight text-black dark:text-white">
                                 GERENCIAMENTO DO PEDIDO
                             </h1>
-                            <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-neutral-600 font-sans">
+                            <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-neutral-600 dark:text-neutral-400 font-sans">
                                 <span className="flex items-center gap-1.5">
-                                    <User size={14} className="text-black" />
-                                    Cliente: <strong className="text-black">{order.user?.name}</strong> ({order.user?.email})
+                                    <User size={14} className="text-black dark:text-white" />
+                                    Cliente: <strong className="text-black dark:text-white">{order.user?.name}</strong> ({order.user?.email})
                                 </span>
                                 <span>•</span>
                                 <span className="flex items-center gap-1.5">
@@ -219,15 +219,15 @@ export default function AdminOrderDetailClient({ orderId }: AdminOrderDetailClie
                             </div>
                         </div>
 
-                        <span className="rounded-full bg-black text-white px-4 py-1.5 text-xs font-bold uppercase tracking-wider">
+                        <span className="rounded-full bg-black text-white dark:bg-white dark:text-black px-4 py-1.5 text-xs font-bold uppercase tracking-wider">
                             {currentConfig.label}
                         </span>
                     </div>
                 </div>
 
                 {/* Seção de Atualização de Status */}
-                <section className="mt-8 rounded-3xl border border-black/10 bg-white p-6 sm:p-8">
-                    <h2 className="font-display text-xl font-bold uppercase tracking-tight text-black">
+                <section className="mt-8 rounded-3xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#181818] p-6 sm:p-8">
+                    <h2 className="font-display text-xl font-bold uppercase tracking-tight text-black dark:text-white">
                         ATUALIZAR STATUS DO PEDIDO
                     </h2>
 
@@ -237,8 +237,8 @@ export default function AdminOrderDetailClient({ orderId }: AdminOrderDetailClie
                         </p>
                     ) : (
                         <div className="mt-6 flex flex-col gap-4">
-                            <p className="text-xs text-neutral-600 font-sans">
-                                Status atual: <strong className="text-black uppercase">{currentConfig.label}</strong>. Selecione a próxima transição permitida:
+                            <p className="text-xs text-neutral-600 dark:text-neutral-400 font-sans">
+                                Status atual: <strong className="text-black dark:text-white uppercase">{currentConfig.label}</strong>. Selecione a próxima transição permitida:
                             </p>
 
                             <div className="flex flex-wrap items-center gap-3">
@@ -253,8 +253,8 @@ export default function AdminOrderDetailClient({ orderId }: AdminOrderDetailClie
                                             onClick={() => setSelectedStatus(nextStatus)}
                                             className={`rounded-full px-5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer ${
                                                 isSelected
-                                                    ? 'bg-black text-white'
-                                                    : 'bg-[#F2F0F1] text-neutral-700 hover:bg-neutral-200'
+                                                    ? 'bg-black text-white dark:bg-white dark:text-black'
+                                                    : 'bg-[#F2F0F1] dark:bg-[#252525] text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-[#303030]'
                                             }`}
                                         >
                                             Avançar para: {nextConfig.label}
@@ -266,7 +266,7 @@ export default function AdminOrderDetailClient({ orderId }: AdminOrderDetailClie
                                     type="button"
                                     onClick={handleInitiateUpdate}
                                     disabled={!selectedStatus || updatingStatus}
-                                    className="ml-auto flex h-11 items-center justify-center rounded-full bg-black px-6 text-xs font-semibold uppercase tracking-wider text-white hover:bg-neutral-800 disabled:opacity-40 transition-colors cursor-pointer"
+                                    className="ml-auto flex h-11 items-center justify-center rounded-full bg-black text-white dark:bg-white dark:text-black px-6 text-xs font-semibold uppercase tracking-wider hover:bg-neutral-800 dark:hover:bg-neutral-200 disabled:opacity-40 transition-colors cursor-pointer"
                                 >
                                     Confirmar Transição
                                 </button>
@@ -275,14 +275,14 @@ export default function AdminOrderDetailClient({ orderId }: AdminOrderDetailClie
                     )}
 
                     {updateSuccess && (
-                        <div className="mt-4 flex items-center gap-2 rounded-2xl bg-emerald-50 border border-emerald-200 p-4 text-xs font-medium text-emerald-700">
+                        <div className="mt-4 flex items-center gap-2 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 p-4 text-xs font-medium text-emerald-700 dark:text-emerald-300">
                             <CheckCircle size={16} />
                             {updateSuccess}
                         </div>
                     )}
 
                     {updateError && (
-                        <div className="mt-4 flex items-center gap-2 rounded-2xl bg-red-50 border border-red-200 p-4 text-xs font-medium text-red-600">
+                        <div className="mt-4 flex items-center gap-2 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 p-4 text-xs font-medium text-red-600 dark:text-red-400">
                             <AlertCircle size={16} />
                             {updateError}
                         </div>
@@ -290,8 +290,8 @@ export default function AdminOrderDetailClient({ orderId }: AdminOrderDetailClie
                 </section>
 
                 {/* Timeline de Histórico */}
-                <section className="mt-8 rounded-3xl border border-black/10 bg-white p-6 sm:p-8">
-                    <h2 className="font-display text-xl font-bold uppercase tracking-tight text-black">
+                <section className="mt-8 rounded-3xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#181818] p-6 sm:p-8">
+                    <h2 className="font-display text-xl font-bold uppercase tracking-tight text-black dark:text-white">
                         HISTÓRICO DE AUDITORIA
                     </h2>
 
@@ -300,16 +300,16 @@ export default function AdminOrderDetailClient({ orderId }: AdminOrderDetailClie
                             Nenhum registro no histórico.
                         </p>
                     ) : (
-                        <ol className="relative mt-6 border-l border-black/10 pl-6 space-y-4">
+                        <ol className="relative mt-6 border-l border-black/10 dark:border-white/10 pl-6 space-y-4">
                             {history.map((step, idx) => {
                                 const stepConfig = getStatusConfig(step.status)
                                 return (
                                     <li key={step.id || idx} className="relative">
-                                        <span className="absolute -left-[31px] flex h-5 w-5 items-center justify-center rounded-full border border-black bg-white">
-                                            <span className="h-2 w-2 rounded-full bg-black" />
+                                        <span className="absolute -left-[31px] flex h-5 w-5 items-center justify-center rounded-full border border-black dark:border-white bg-white dark:bg-[#121212]">
+                                            <span className="h-2 w-2 rounded-full bg-black dark:bg-white" />
                                         </span>
                                         <div className="flex flex-wrap items-baseline justify-between gap-2">
-                                            <span className="text-xs font-bold uppercase tracking-wider text-black">
+                                            <span className="text-xs font-bold uppercase tracking-wider text-black dark:text-white">
                                                 {stepConfig.label}
                                             </span>
                                             <time className="font-mono text-[11px] text-neutral-400">
@@ -324,24 +324,24 @@ export default function AdminOrderDetailClient({ orderId }: AdminOrderDetailClie
                 </section>
 
                 {/* Produtos do Pedido */}
-                <section className="mt-8 rounded-3xl border border-black/10 bg-white p-6 sm:p-8">
-                    <h2 className="font-display text-xl font-bold uppercase tracking-tight text-black">
+                <section className="mt-8 rounded-3xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#181818] p-6 sm:p-8">
+                    <h2 className="font-display text-xl font-bold uppercase tracking-tight text-black dark:text-white">
                         PRODUTOS DO PEDIDO ({order.items.length})
                     </h2>
 
-                    <div className="mt-6 divide-y divide-black/10">
+                    <div className="mt-6 divide-y divide-black/10 dark:divide-white/10">
                         {order.items.map((item) => (
                             <div
                                 key={item.id}
                                 className="py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
                             >
                                 <div className="flex items-center gap-4 flex-1 min-w-0">
-                                    <div className="h-16 w-16 rounded-2xl bg-[#F2F0F1] flex items-center justify-center p-2 shrink-0">
+                                    <div className="h-16 w-16 rounded-2xl bg-[#F2F0F1] dark:bg-[#252525] flex items-center justify-center p-2 shrink-0">
                                         {item.image ? (
                                             <img
                                                 src={item.image}
                                                 alt={item.name}
-                                                className="h-full w-full object-contain mix-blend-multiply"
+                                                className="h-full w-full object-contain dark:brightness-95"
                                             />
                                         ) : (
                                             <ImageOff size={20} className="text-neutral-400" />
@@ -349,20 +349,20 @@ export default function AdminOrderDetailClient({ orderId }: AdminOrderDetailClie
                                     </div>
 
                                     <div className="min-w-0 flex-1">
-                                        <h4 className="font-display font-bold text-sm text-black uppercase tracking-tight truncate">
+                                        <h4 className="font-display font-bold text-sm text-black dark:text-white uppercase tracking-tight truncate">
                                             {item.name}
                                         </h4>
-                                        <p className="text-xs text-neutral-500 font-sans mt-0.5">
+                                        <p className="text-xs text-neutral-500 dark:text-neutral-400 font-sans mt-0.5">
                                             SKU: {item.sku}
                                         </p>
                                     </div>
                                 </div>
 
                                 <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto">
-                                    <span className="text-xs text-neutral-600">
-                                        Qtd: <strong className="text-black">{item.quantity}</strong>
+                                    <span className="text-xs text-neutral-600 dark:text-neutral-400">
+                                        Qtd: <strong className="text-black dark:text-white">{item.quantity}</strong>
                                     </span>
-                                    <span className="font-display font-bold text-base text-black">
+                                    <span className="font-display font-bold text-base text-black dark:text-white">
                                         {formatPrice(item.price * item.quantity)}
                                     </span>
                                 </div>
@@ -370,7 +370,7 @@ export default function AdminOrderDetailClient({ orderId }: AdminOrderDetailClie
                         ))}
                     </div>
 
-                    <div className="mt-6 flex items-center justify-between border-t border-black/10 pt-4 text-base font-bold uppercase tracking-tight text-black">
+                    <div className="mt-6 flex items-center justify-between border-t border-black/10 dark:border-white/10 pt-4 text-base font-bold uppercase tracking-tight text-black dark:text-white">
                         <span>Valor Total</span>
                         <span className="font-display font-extrabold text-xl">{formatPrice(order.total)}</span>
                     </div>
@@ -384,28 +384,28 @@ export default function AdminOrderDetailClient({ orderId }: AdminOrderDetailClie
                     aria-modal="true"
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm"
                 >
-                    <div className="w-full max-w-md rounded-3xl bg-white p-6 sm:p-8 shadow-2xl border border-black/10">
-                        <h2 className="font-display text-xl font-bold uppercase tracking-tight text-black">
+                    <div className="w-full max-w-md rounded-3xl bg-white dark:bg-[#181818] p-6 sm:p-8 shadow-2xl border border-black/10 dark:border-white/10 text-black dark:text-white">
+                        <h2 className="font-display text-xl font-bold uppercase tracking-tight text-black dark:text-white">
                             Confirmar Atualização de Status
                         </h2>
-                        <p className="mt-3 text-sm text-neutral-600 font-sans">
+                        <p className="mt-3 text-sm text-neutral-600 dark:text-neutral-400 font-sans">
                             Deseja alterar o status do pedido #{order.id} de{' '}
-                            <strong className="text-black uppercase">{currentConfig.label}</strong> para{' '}
-                            <strong className="text-black uppercase">{getStatusConfig(selectedStatus).label}</strong>?
+                            <strong className="text-black dark:text-white uppercase">{currentConfig.label}</strong> para{' '}
+                            <strong className="text-black dark:text-white uppercase">{getStatusConfig(selectedStatus).label}</strong>?
                         </p>
 
                         {selectedStatus === 'CANCELED' && (
-                            <div className="mt-4 p-3 rounded-2xl bg-red-50 text-xs text-red-600">
+                            <div className="mt-4 p-3 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 text-xs text-red-600 dark:text-red-400">
                                 Atenção: O cancelamento restaurará os itens no estoque e não poderá ser revertido.
                             </div>
                         )}
 
-                        <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-black/10">
+                        <div className="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-black/10 dark:border-white/10">
                             <button
                                 type="button"
                                 onClick={() => setConfirmModalOpen(false)}
                                 disabled={updatingStatus}
-                                className="h-11 px-5 rounded-full border border-black/15 text-xs font-semibold uppercase tracking-wider text-black hover:bg-[#F2F0F1]"
+                                className="h-11 px-5 rounded-full border border-black/15 dark:border-white/20 text-xs font-semibold uppercase tracking-wider text-black dark:text-white hover:bg-[#F2F0F1] dark:hover:bg-[#252525] transition-colors"
                             >
                                 Cancelar
                             </button>
@@ -413,7 +413,7 @@ export default function AdminOrderDetailClient({ orderId }: AdminOrderDetailClie
                                 type="button"
                                 onClick={handleConfirmStatusUpdate}
                                 disabled={updatingStatus}
-                                className="flex h-11 items-center justify-center gap-2 rounded-full bg-black px-6 text-xs font-semibold uppercase tracking-wider text-white hover:bg-neutral-800 disabled:opacity-40"
+                                className="flex h-11 items-center justify-center gap-2 rounded-full bg-black text-white dark:bg-white dark:text-black px-6 text-xs font-semibold uppercase tracking-wider hover:bg-neutral-800 dark:hover:bg-neutral-200 disabled:opacity-40 transition-colors"
                             >
                                 {updatingStatus ? (
                                     <>

@@ -39,15 +39,15 @@ export default function MainUsers() {
     }, [])
 
     return (
-        <main className="min-h-screen flex-1 bg-white px-6 py-8 font-sans text-black">
+        <main className="min-h-screen flex-1 bg-white dark:bg-[#121212] px-6 py-8 font-sans text-black dark:text-white transition-colors">
             <div className="mx-auto w-full max-w-5xl">
                 {/* Cabeçalho */}
-                <header className="flex flex-wrap items-end justify-between gap-4 border-b border-black/10 pb-6">
+                <header className="flex flex-wrap items-end justify-between gap-4 border-b border-black/10 dark:border-white/10 pb-6">
                     <div>
-                        <h1 className="font-display text-3xl font-extrabold uppercase tracking-tight text-black">
+                        <h1 className="font-display text-3xl font-extrabold uppercase tracking-tight text-black dark:text-white">
                             USUÁRIOS CADASTRADOS
                         </h1>
-                        <p className="mt-1 text-sm text-neutral-600 font-sans">
+                        <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400 font-sans">
                             Gerencie os clientes e administradores da plataforma.
                         </p>
                     </div>
@@ -64,14 +64,14 @@ export default function MainUsers() {
                 )}
 
                 {error && (
-                    <div role="alert" className="mt-6 p-4 rounded-2xl bg-red-50 text-red-600 text-xs font-medium border border-red-200">
+                    <div role="alert" className="mt-6 p-4 rounded-2xl bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 text-xs font-medium border border-red-200 dark:border-red-900/50">
                         {error}
                     </div>
                 )}
 
                 {!loading && !error && users.length === 0 && (
-                    <div className="mt-8 rounded-3xl bg-[#F2F0F1] p-12 text-center">
-                        <p className="text-sm font-semibold uppercase tracking-wider text-black">
+                    <div className="mt-8 rounded-3xl bg-[#F2F0F1] dark:bg-[#181818] p-12 text-center">
+                        <p className="text-sm font-semibold uppercase tracking-wider text-black dark:text-white">
                             Nenhum usuário cadastrado.
                         </p>
                     </div>
@@ -83,31 +83,31 @@ export default function MainUsers() {
                         {users.map((user) => (
                             <li
                                 key={user.Id}
-                                className="rounded-3xl border border-black/10 bg-white p-4 transition-all hover:border-black/30 hover:shadow-sm sm:flex sm:items-center sm:gap-4"
+                                className="rounded-3xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#181818] p-4 transition-all hover:border-black/30 dark:hover:border-white/30 hover:shadow-sm sm:flex sm:items-center sm:gap-4"
                             >
                                 {/* Avatar em pílula #F2F0F1 */}
-                                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#F2F0F1] text-black">
+                                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#F2F0F1] dark:bg-[#222222] text-black dark:text-white">
                                     <UserRound size={22} />
                                 </div>
 
                                 {/* Nome + E-mail */}
                                 <div className="min-w-0 sm:flex-1 mt-2 sm:mt-0">
-                                    <p className="font-display font-bold text-base text-black uppercase tracking-tight truncate">
+                                    <p className="font-display font-bold text-base text-black dark:text-white uppercase tracking-tight truncate">
                                         {user.name}
                                     </p>
-                                    <p className="text-xs text-neutral-500 font-sans mt-0.5">
+                                    <p className="text-xs text-neutral-500 dark:text-neutral-400 font-sans mt-0.5">
                                         {user.email}
                                     </p>
                                 </div>
 
                                 {/* Datas */}
-                                <div className="text-xs text-neutral-500 font-sans sm:text-right mt-2 sm:mt-0">
-                                    <p>Cadastrado em: <strong className="text-black">{formatDate(user.created_at)}</strong></p>
+                                <div className="text-xs text-neutral-500 dark:text-neutral-400 font-sans sm:text-right mt-2 sm:mt-0">
+                                    <p>Cadastrado em: <strong className="text-black dark:text-white">{formatDate(user.created_at)}</strong></p>
                                 </div>
 
                                 {/* Função */}
                                 <div className="mt-2 sm:mt-0">
-                                    <span className="rounded-full bg-[#F2F0F1] px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-black">
+                                    <span className="rounded-full bg-[#F2F0F1] dark:bg-[#222222] px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-black dark:text-white">
                                         {formatRole(user.role)}
                                     </span>
                                 </div>

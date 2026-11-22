@@ -32,9 +32,9 @@ const validateImage = (f: File | null) =>
 function FormField({ id, label, error, children }: { id: Field; label: string; error?: string; children: ReactNode }) {
     return (
         <div className="flex flex-col gap-1.5">
-            <label htmlFor={id} className="text-xs uppercase tracking-wider text-black font-bold">{label}</label>
+            <label htmlFor={id} className="text-xs uppercase tracking-wider text-black dark:text-white font-bold">{label}</label>
             {children}
-            {error && <span id={`${id}-error`} role="alert" className="text-xs text-red-600 font-medium px-3">{error}</span>}
+            {error && <span id={`${id}-error`} role="alert" className="text-xs text-red-600 dark:text-red-400 font-medium px-3">{error}</span>}
         </div>
     );
 }
@@ -100,8 +100,8 @@ export default function MainNovoProducts() {
     }
 
     const inputCls = (f: Field, extra = "h-12") =>
-        `w-full rounded-full border bg-[#F2F0F1] px-5 text-sm text-black placeholder:text-neutral-500 outline-none transition font-sans ${extra} ${
-            errors[f] ? "border-red-500 bg-red-50 focus:border-red-500" : "border-transparent focus:border-black/20 focus:bg-white"
+        `w-full rounded-full border bg-[#F2F0F1] dark:bg-[#1f1f1f] px-5 text-sm text-black dark:text-white placeholder:text-neutral-500 outline-none transition font-sans ${extra} ${
+            errors[f] ? "border-red-500 bg-red-50 dark:bg-red-950/40 focus:border-red-500" : "border-transparent focus:border-black/20 dark:focus:border-white/20 focus:bg-white dark:focus:bg-[#181818]"
         }`;
 
     const bind = (f: TextField) => ({
@@ -121,17 +121,17 @@ export default function MainNovoProducts() {
     const showPreview = previewUrl && !errors.image && !imageBroken;
 
     return (
-        <main className="flex-1 flex items-start justify-center px-6 py-10 md:py-14 font-sans text-black">
+        <main className="flex-1 flex items-start justify-center px-6 py-10 md:py-14 font-sans text-black dark:text-white bg-white dark:bg-[#121212] transition-colors">
             <div className="w-full max-w-[500px]">
-                <h2 className="font-display text-3xl sm:text-4xl font-extrabold uppercase tracking-tight text-black">
+                <h2 className="font-display text-3xl sm:text-4xl font-extrabold uppercase tracking-tight text-black dark:text-white">
                     CADASTRAR NOVO PRODUTO
                 </h2>
-                <p className="mt-2 text-sm text-neutral-600 font-sans">
+                <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400 font-sans">
                     Preencha os dados do item para adicioná-lo ao catálogo da loja.
                 </p>
 
                 {success && (
-                    <div role="status" className="mt-6 flex items-center gap-3 rounded-2xl bg-emerald-50 border border-emerald-200 p-4 text-xs font-medium text-emerald-700">
+                    <div role="status" className="mt-6 flex items-center gap-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 p-4 text-xs font-medium text-emerald-700 dark:text-emerald-300">
                         <CheckCircle2 size={18} className="shrink-0" />
                         Produto cadastrado com sucesso e adicionado ao catálogo!
                     </div>
@@ -160,7 +160,7 @@ export default function MainNovoProducts() {
                         <textarea
                             rows={4}
                             placeholder="Descreva detalhes como corte, caimento, composição de algodão..."
-                            className="w-full rounded-2xl border border-transparent bg-[#F2F0F1] p-4 text-sm text-black placeholder:text-neutral-500 outline-none focus:border-black/20 focus:bg-white resize-y"
+                            className="w-full rounded-2xl border border-transparent bg-[#F2F0F1] dark:bg-[#1f1f1f] p-4 text-sm text-black dark:text-white placeholder:text-neutral-500 outline-none focus:border-black/20 dark:focus:border-white/20 focus:bg-white dark:focus:bg-[#181818] resize-y"
                             {...bind("description")}
                         />
                     </FormField>
@@ -173,24 +173,24 @@ export default function MainNovoProducts() {
                             accept={IMAGE_TYPES.join(",")}
                             aria-invalid={!!errors.image}
                             aria-describedby={errors.image ? "image-error" : undefined}
-                            className="w-full text-xs text-neutral-600 file:mr-4 file:py-2.5 file:px-5 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-black file:text-white hover:file:bg-neutral-800 cursor-pointer"
+                            className="w-full text-xs text-neutral-600 dark:text-neutral-400 file:mr-4 file:py-2.5 file:px-5 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-black file:text-white dark:file:bg-white dark:file:text-black hover:file:bg-neutral-800 dark:hover:file:bg-neutral-200 cursor-pointer"
                             onChange={onFileChange}
                         />
                         {showPreview && (
-                            <div className="mt-2 h-36 w-36 rounded-2xl bg-[#F2F0F1] p-2 overflow-hidden flex items-center justify-center">
+                            <div className="mt-2 h-36 w-36 rounded-2xl bg-[#F2F0F1] dark:bg-[#1f1f1f] p-2 overflow-hidden flex items-center justify-center">
                                 <img
                                     src={previewUrl}
                                     alt="Pré-visualização"
                                     onError={() => setImageBroken(true)}
-                                    className="h-full w-full object-contain mix-blend-multiply"
+                                    className="h-full w-full object-contain dark:brightness-95"
                                 />
                             </div>
                         )}
-                        {imageBroken && <span className="text-xs text-red-600">Não foi possível carregar a pré-visualização.</span>}
+                        {imageBroken && <span className="text-xs text-red-600 dark:text-red-400">Não foi possível carregar a pré-visualização.</span>}
                     </FormField>
 
                     {formError && (
-                        <div role="alert" className="p-3 rounded-2xl bg-red-50 text-xs text-red-600 font-medium">
+                        <div role="alert" className="p-3 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 text-xs text-red-600 dark:text-red-400 font-medium">
                             {formError}
                         </div>
                     )}
@@ -198,7 +198,7 @@ export default function MainNovoProducts() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="mt-4 h-12 rounded-full bg-black text-xs font-semibold uppercase tracking-wider text-white transition hover:bg-neutral-800 active:scale-[0.99] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm"
+                        className="mt-4 h-12 rounded-full bg-black text-white dark:bg-white dark:text-black text-xs font-semibold uppercase tracking-wider transition hover:bg-neutral-800 dark:hover:bg-neutral-200 active:scale-[0.99] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm"
                     >
                         {loading ? "Gravando produto..." : "Cadastrar Produto"} <ArrowRight size={16} />
                     </button>

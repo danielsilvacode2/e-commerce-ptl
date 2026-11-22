@@ -2,6 +2,7 @@
 import Link from "next/link"
 import { Plus, List, House, ShoppingBag, Users, Menu, X } from "lucide-react"
 import { useState } from "react"
+import ThemeToggle from "@/src/components/theme/theme-toggle"
 
 type NavItem = {
     key: string
@@ -26,21 +27,24 @@ export default function NavProducts({ active }: NavProductsProps) {
     const [menuOpen, setMenuOpen] = useState(false)
 
     return (
-        <aside className="shrink-0 bg-white border-b md:border-b-0 md:border-r border-black/10 flex flex-col md:w-64 font-sans">
-            {/* Topo: Logo + botão hambúrguer (mobile) */}
+        <aside className="shrink-0 bg-white dark:bg-[#121212] border-b md:border-b-0 md:border-r border-black/10 dark:border-white/10 flex flex-col md:w-64 font-sans transition-colors">
+            {/* Topo: Logo + ThemeToggle + botão hambúrguer (mobile) */}
             <div className="flex items-center justify-between p-4 sm:p-6 md:pb-8">
-                <Link href="/" className="font-display font-extrabold text-xl uppercase tracking-tight text-black">
-                    SHOP.CO <span className="text-[10px] ml-1 bg-black text-white px-2 py-0.5 rounded-full font-sans tracking-normal">ADMIN</span>
+                <Link href="/" className="font-display font-extrabold text-xl uppercase tracking-tight text-black dark:text-white">
+                    SHOP.CO <span className="text-[10px] ml-1 bg-black text-white dark:bg-white dark:text-black px-2 py-0.5 rounded-full font-sans tracking-normal">ADMIN</span>
                 </Link>
 
-                <button
-                    type="button"
-                    aria-label={menuOpen ? "Fechar menu" : "Abrir menu"}
-                    onClick={() => setMenuOpen(!menuOpen)}
-                    className="p-2 text-black md:hidden rounded-lg hover:bg-[#F2F0F1]"
-                >
-                    {menuOpen ? <X size={20} /> : <Menu size={20} />}
-                </button>
+                <div className="flex items-center gap-2 md:hidden">
+                    <ThemeToggle />
+                    <button
+                        type="button"
+                        aria-label={menuOpen ? "Fechar menu" : "Abrir menu"}
+                        onClick={() => setMenuOpen(!menuOpen)}
+                        className="p-2 text-black dark:text-white rounded-lg hover:bg-[#F2F0F1] dark:hover:bg-[#202020] transition-colors"
+                    >
+                        {menuOpen ? <X size={20} /> : <Menu size={20} />}
+                    </button>
+                </div>
             </div>
 
             {/* Links de navegação */}
@@ -60,8 +64,8 @@ export default function NavProducts({ active }: NavProductsProps) {
                             aria-current={isActive ? "page" : undefined}
                             className={`flex items-center gap-3 px-4 py-3 rounded-full text-xs font-semibold uppercase tracking-wider transition-colors ${
                                 isActive
-                                    ? "bg-black text-white"
-                                    : "text-neutral-600 hover:bg-[#F2F0F1] hover:text-black"
+                                    ? "bg-black text-white dark:bg-white dark:text-black"
+                                    : "text-neutral-600 dark:text-neutral-400 hover:bg-[#F2F0F1] dark:hover:bg-[#202020] hover:text-black dark:hover:text-white"
                             }`}
                         >
                             <Icon size={16} />
@@ -71,8 +75,11 @@ export default function NavProducts({ active }: NavProductsProps) {
                 })}
             </nav>
 
-            <div className="hidden md:block mt-auto p-6 border-t border-black/5 text-[11px] uppercase tracking-wider text-neutral-400">
-                Painel Gerencial 2026
+            <div className="hidden md:flex mt-auto p-6 border-t border-black/5 dark:border-white/10 items-center justify-between">
+                <div className="text-[11px] uppercase tracking-wider text-neutral-400">
+                    Painel 2026
+                </div>
+                <ThemeToggle />
             </div>
         </aside>
     )

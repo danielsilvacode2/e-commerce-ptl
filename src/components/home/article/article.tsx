@@ -4,8 +4,11 @@ import { JSX, useEffect, useRef, useState } from 'react'
 import { ProductResponse } from '@/src/actions/product/read_all_request'
 import CreateCart from '@/src/actions/cart/create_cart'
 import ReadCart, { CartResponse } from '@/src/actions/cart/read_all'
+import ReadMe from '@/src/actions/me/readMe'
+import { guestCartService } from '@/src/services/guest-cart'
 import { useRouter } from 'next/navigation'
 import { AlertCircle, Loader2, Plus, X, Check, ShoppingBag } from 'lucide-react'
+import ProductDetailModal from '@/src/components/products/product-detail-modal'
 
 const ADD_TO_CART_DELAY_MS = 3000
 const WARNING_DELAY_MS = 3500
@@ -62,6 +65,8 @@ export default function ArticleHome({
   const [warningProduct, setWarningProduct] = useState<ProductResponse | null>(null)
   const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  const [selectedProductForDetail, setSelectedProductForDetail] = useState<ProductResponse | null>(null)
+
   useEffect(() => {
     return () => {
       if (warningTimerRef.current) clearTimeout(warningTimerRef.current)
@@ -92,7 +97,22 @@ export default function ArticleHome({
     const timer = setTimeout(async () => {
       setIsSaving(true)
       try {
-        await CreateCart({ product_id: product.id, quantity: 1 })
+        const user = await ReadMe()
+        if (user) {
+          // Usuário logado: envia direto para a API
+          await CreateCart({ product_id: product.id, quantity: 1 })
+        } else {
+          // Visitante: armazena no guestCart
+          guestCartService.addItem({
+            productId: product.id,
+            quantity: 1,
+            name: product.name,
+            sku: product.sku,
+            description: product.description,
+            price: Number(product.price),
+            image: product.image,
+          })
+        }
         onCartChange?.()
         router.refresh()
       } catch (err) {
@@ -119,11 +139,21 @@ export default function ArticleHome({
     }
 
     try {
-      const freshCart = await ReadCart()
-      setCart(freshCart)
-      if (freshCart?.list?.some((item) => item.product_id === produto.id)) {
-        triggerWarning(produto)
-        return
+      const user = await ReadMe()
+      if (user) {
+        const freshCart = await ReadCart()
+        setCart(freshCart)
+        if (freshCart?.list?.some((item) => item.product_id === produto.id)) {
+          triggerWarning(produto)
+          return
+        }
+      } else {
+        const guestCart = guestCartService.toCartResponse()
+        setCart(guestCart)
+        if (guestCart?.list?.some((item) => item.product_id === produto.id)) {
+          triggerWarning(produto)
+          return
+        }
       }
     } catch {
       // continua para adicionar
@@ -147,7 +177,20 @@ export default function ArticleHome({
     const inCart = cart?.list?.some((item) => item.product_id === p.id)
 
     return (
-      <div key={p.id} className="group flex flex-col">
+      <div
+        key={p.id}
+        onClick={() => setSelectedProductForDetail(p)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            setSelectedProductForDetail(p)
+          }
+        }}
+        tabIndex={0}
+        role="button"
+        aria-label={`Ver detalhes de ${p.name}`}
+        className="group flex flex-col text-left cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-black dark:focus-visible:outline-white rounded-2xl"
+      >
         {/* Container da imagem com fundo branco constante */}
         <div className="relative aspect-square w-full rounded-2xl bg-white flex items-center justify-center p-6 overflow-hidden transition-all duration-300 group-hover:shadow-md border border-black/10 dark:border-white/10 shadow-xs">
           {p.quantity <= 3 && p.quantity > 0 && (
@@ -174,7 +217,10 @@ export default function ArticleHome({
             <button
               type="button"
               disabled={isUnavailable || (isBusy && !isPending)}
-              onClick={() => handleQueueAdd(p)}
+              onClick={(e) => {
+                e.stopPropagation()
+                handleQueueAdd(p)
+              }}
               className={`w-full py-3 px-4 rounded-full font-semibold text-xs uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 transition-all ${
                 isUnavailable
                   ? 'bg-neutral-300 dark:bg-neutral-700 text-neutral-500 cursor-not-allowed'
@@ -223,7 +269,10 @@ export default function ArticleHome({
           <button
             type="button"
             disabled={isUnavailable || (isBusy && !isPending)}
-            onClick={() => handleQueueAdd(p)}
+            onClick={(e) => {
+              e.stopPropagation()
+              handleQueueAdd(p)
+            }}
             className="mt-3 flex sm:hidden w-full items-center justify-center gap-1.5 py-2.5 rounded-full border border-black/15 dark:border-white/15 bg-white dark:bg-[#1a1a1a] text-black dark:text-white font-semibold text-xs uppercase"
           >
             {isUnavailable ? 'Esgotado' : isPending ? 'Adicionando...' : inCart ? 'No Carrinho' : '+ Adicionar'}
@@ -443,6 +492,18 @@ export default function ArticleHome({
           </button>
         </div>
       )}
+
+      {/* Modal de Detalhes do Produto */}
+      <ProductDetailModal
+        productId={selectedProductForDetail?.id ?? null}
+        initialProduct={selectedProductForDetail}
+        isOpen={Boolean(selectedProductForDetail)}
+        onClose={() => setSelectedProductForDetail(null)}
+        onAddToCart={(p) => {
+          setSelectedProductForDetail(null)
+          handleQueueAdd(p)
+        }}
+      />
     </div>
   )
 }
