@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
+import { Package } from 'lucide-react'
 import HeaderHome from '@/src/components/home/header/header'
 import FooterHome from '@/src/components/home/footer/footer'
 import ProductSearchService from '@/src/actions/product/search_request'
@@ -107,10 +108,18 @@ function SearchResults() {
                 aria-label={`Ver detalhes de ${product.name}`}
                 className="group flex flex-col text-left cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-black dark:focus-visible:outline-white rounded-2xl"
               >
-                <div className="aspect-square w-full overflow-hidden rounded-2xl bg-[#F2F0F1] dark:bg-[#1f1f1f] flex items-center justify-center p-4 transition-all duration-300 group-hover:shadow-md">
-                  {product.image && (
+                {/* Container da imagem com fundo branco constante */}
+                <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-white flex items-center justify-center p-6 transition-all duration-300 group-hover:shadow-md border border-black/10 dark:border-white/10 shadow-xs">
+                  {product.image ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={product.image} alt={product.name} className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-105" />
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      loading="lazy"
+                      className="h-full w-full object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-105"
+                    />
+                  ) : (
+                    <Package className="h-12 w-12 stroke-1 text-neutral-400" />
                   )}
                 </div>
                 <h2 className="mt-4 text-sm font-bold uppercase truncate group-hover:text-neutral-600 dark:group-hover:text-neutral-300 transition-colors">{product.name}</h2>

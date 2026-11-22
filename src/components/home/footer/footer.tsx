@@ -74,7 +74,9 @@ export default function FooterHome() {
                 <InstagramIcon />
               </a>
               <a
-                href="#"
+                href="https://github.com/danielsilvacode2"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="h-9 w-9 rounded-full bg-white dark:bg-[#202020] border border-black/10 dark:border-white/10 flex items-center justify-center text-black dark:text-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
                 aria-label="GitHub"
               >
