@@ -1,12 +1,21 @@
-export type OrderStatus = 'PREPARING' | 'SHIPPED' | 'DELIVERED' | 'CANCELED';
+export type OrderStatus =
+    | 'PENDING_PAYMENT'
+    | 'PREPARING'
+    | 'SHIPPED'
+    | 'DELIVERED'
+    | 'CANCELED'
+    | 'REFUND_REQUESTED'
+    | 'REFUNDED';
 
 export interface OrderItemResponse {
     id: string;
     product_id: string;
     name: string;
     sku: string;
-    description: string;
-    price: number;
+    description?: string;
+    price?: number;
+    unit_price?: number;
+    subtotal?: number;
     image: string;
     quantity: number;
 }
@@ -22,6 +31,9 @@ export interface OrderResponse {
     user: UserOrderResponse;
     status: OrderStatus;
     zip_code: string;
+    tracking_code?: string;
+    refund_reason?: string;
+    refund_rejection_reason?: string;
     total: number;
     items: OrderItemResponse[];
     update_at: string;

@@ -128,7 +128,7 @@ export default function FooterHome() {
 
         {/* Bottom Credits & Copyright */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-500 font-sans">
-          <p>SHOP.CO © 2026. Todos os direitos reservados.</p>
+          <p>NERO © 2026. Todos os direitos reservados.</p>
           <div className="flex items-center gap-3">
             <span className="px-2.5 py-1 rounded bg-white dark:bg-[#202020] border border-black/10 dark:border-white/10 font-bold text-[10px] text-black dark:text-white">VISA</span>
             <span className="px-2.5 py-1 rounded bg-white dark:bg-[#202020] border border-black/10 dark:border-white/10 font-bold text-[10px] text-black dark:text-white">MASTERCARD</span>

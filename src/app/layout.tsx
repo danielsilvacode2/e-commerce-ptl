@@ -16,7 +16,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "SHOP.CO | Moda & Streetwear Moderno",
+  title: "NERO | Moda & Streetwear Moderno",
   description: "Minimalismo Moderno de Alto Contraste",
 };
 

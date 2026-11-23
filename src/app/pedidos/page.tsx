@@ -3,8 +3,8 @@ import FooterHome from '@/src/components/home/footer/footer';
 import MyOrdersClient from '@/src/components/pedidos/main/main';
 
 export const metadata = {
-    title: 'Meus Pedidos | SHOP.CO',
-    description: 'Acompanhe todos os seus pedidos realizados na SHOP.CO.',
+    title: 'Meus Pedidos | NERO',
+    description: 'Acompanhe todos os seus pedidos realizados na NERO.',
 };
 
 export default function MyOrdersPage() {

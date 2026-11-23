@@ -87,7 +87,7 @@ function SignUpFormContent() {
                 <div className="absolute inset-0 bg-radial from-neutral-200/50 to-transparent pointer-events-none" />
 
                 <Link href="/" className="font-display text-3xl font-extrabold uppercase tracking-tight text-black z-10">
-                    SHOP.CO
+                    NERO
                 </Link>
 
                 <div className="max-w-md z-10">
@@ -103,7 +103,7 @@ function SignUpFormContent() {
                 </div>
 
                 <div className="text-xs uppercase tracking-widest text-neutral-500 z-10 font-mono">
-                    SHOP.CO REGISTRY 2026
+                    NERO REGISTRY 2026
                 </div>
             </section>
 
@@ -112,7 +112,7 @@ function SignUpFormContent() {
                 <div className="w-full max-w-[380px]">
                     <div className="lg:hidden mb-8">
                         <Link href="/" className="font-display text-2xl font-extrabold uppercase tracking-tight text-black">
-                            SHOP.CO
+                            NERO
                         </Link>
                     </div>
 

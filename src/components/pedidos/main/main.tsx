@@ -38,9 +38,12 @@ const formatDate = (value: string) => {
 
 const FILTER_TABS = [
     { label: 'Todos', value: '' },
-    { label: 'Em Separação', value: 'PREPARING' },
+    { label: 'Aguardando Pagamento', value: 'PENDING_PAYMENT' },
+    { label: 'Em Preparação', value: 'PREPARING' },
     { label: 'Enviados', value: 'SHIPPED' },
     { label: 'Entregues', value: 'DELIVERED' },
+    { label: 'Estorno Solicitado', value: 'REFUND_REQUESTED' },
+    { label: 'Estornados', value: 'REFUNDED' },
     { label: 'Cancelados', value: 'CANCELED' },
 ]
 
@@ -209,15 +212,25 @@ export default function MyOrdersClient() {
                                             {order.items.length > 2 ? '...' : ''}
                                         </div>
 
-                                        <div className="flex items-center gap-6">
+                                        <div className="flex flex-wrap items-center gap-3 sm:gap-5">
                                             <div>
                                                 <span className="block text-[10px] uppercase tracking-wider text-neutral-500">
-                                                    Total Pago
+                                                    Total
                                                 </span>
                                                 <span className="font-display font-bold text-base sm:text-lg text-black">
                                                     {formatPrice(order.total)}
                                                 </span>
                                             </div>
+
+                                            {order.status === 'PENDING_PAYMENT' && (
+                                                <Link
+                                                    href={`/pedidos/${order.id}/pagamento`}
+                                                    className="flex h-10 items-center gap-1.5 rounded-full bg-black px-5 text-xs font-semibold uppercase tracking-wider text-white hover:bg-neutral-800 transition-colors"
+                                                >
+                                                    Pagar Agora
+                                                    <ArrowRight size={14} />
+                                                </Link>
+                                            )}
 
                                             <Link
                                                 href={`/pedidos/${order.id}`}

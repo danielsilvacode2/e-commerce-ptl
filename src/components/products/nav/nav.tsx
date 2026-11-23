@@ -31,7 +31,7 @@ export default function NavProducts({ active }: NavProductsProps) {
             {/* Topo: Logo + ThemeToggle + botão hambúrguer (mobile) */}
             <div className="flex items-center justify-between p-4 sm:p-6 md:pb-8">
                 <Link href="/" className="font-display font-extrabold text-xl uppercase tracking-tight text-black dark:text-white">
-                    SHOP.CO <span className="text-[10px] ml-1 bg-black text-white dark:bg-white dark:text-black px-2 py-0.5 rounded-full font-sans tracking-normal">ADMIN</span>
+                    NERO <span className="text-[10px] ml-1 bg-black text-white dark:bg-white dark:text-black px-2 py-0.5 rounded-full font-sans tracking-normal">ADMIN</span>
                 </Link>
 
                 <div className="flex items-center gap-2 md:hidden">

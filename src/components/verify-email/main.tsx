@@ -191,7 +191,7 @@ function VerifyEmailContent() {
             <div className="w-full max-w-md">
                 <div className="mb-6 text-center">
                     <Link href="/" className="font-display text-3xl font-extrabold uppercase tracking-tight text-black inline-block mb-4">
-                        SHOP.CO
+                        NERO
                     </Link>
                     <h1 className="font-display text-3xl font-extrabold uppercase tracking-tight text-black">
                         VERIFICAR E-MAIL

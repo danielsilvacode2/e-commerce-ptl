@@ -52,9 +52,7 @@ export default function MainCart({ list = [], setList, loading = false, error = 
     const selectedItems = items.filter((i) => i.isSelect)
     const allSelected = items.length > 0 && selectedItems.length === items.length
     const subtotal = selectedItems.reduce((acc, i) => acc + Number(i.price) * i.quantity, 0)
-    const discount = subtotal > 0 ? subtotal * 0.1 : 0 // 10% de desconto de estilo SHOP.CO
-    const deliveryFee = subtotal > 199 || subtotal === 0 ? 0 : 25
-    const total = subtotal - discount + deliveryFee
+    const total = subtotal
 
     const [updatingId, setUpdatingId] = useState<string | null>(null)
     const [maxedIds, setMaxedIds] = useState<Set<string>>(new Set())
@@ -299,7 +297,7 @@ export default function MainCart({ list = [], setList, loading = false, error = 
         try {
             const order = await CreateOrderService({ zip_code: cleanZip })
             setCartRefresh((v) => v + 1)
-            router.push(`/pedidos/${order.id}`)
+            router.push(`/pedidos/${order.id}/pagamento`)
         } catch (err: unknown) {
             if (err instanceof Error) {
                 setCheckoutError(err.message)
@@ -487,22 +485,6 @@ export default function MainCart({ list = [], setList, loading = false, error = 
                             <div className="flex items-center justify-between text-neutral-600 pt-2">
                                 <span>Subtotal</span>
                                 <span className="font-bold text-black">{formatPrice(subtotal)}</span>
-                            </div>
-                            <div className="flex items-center justify-between text-neutral-600 pt-3">
-                                <span className="flex items-center gap-1.5">
-                                    Desconto (-10%)
-                                </span>
-                                <span className="font-bold text-red-600">-{formatPrice(discount)}</span>
-                            </div>
-                            <div className="flex items-center justify-between text-neutral-600 pt-3">
-                                <span>Taxa de Entrega</span>
-                                <span className="font-bold text-black">
-                                    {deliveryFee === 0 ? (
-                                        <span className="text-emerald-600 font-bold uppercase text-xs">Grátis</span>
-                                    ) : (
-                                        formatPrice(deliveryFee)
-                                    )}
-                                </span>
                             </div>
                             <div className="flex items-center justify-between text-base sm:text-lg font-bold text-black pt-4">
                                 <span>Total</span>

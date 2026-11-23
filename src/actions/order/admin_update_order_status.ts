@@ -4,11 +4,13 @@ import { OrderStatus } from '@/src/types/order';
 export interface AdminUpdateOrderStatusParams {
     orderId: string;
     status: OrderStatus;
+    trackingCode?: string;
 }
 
 export default async function AdminUpdateOrderStatusService({
     orderId,
     status,
+    trackingCode,
 }: AdminUpdateOrderStatusParams): Promise<void> {
     const baseUrl = ApiUrlBase();
 
@@ -20,6 +22,7 @@ export default async function AdminUpdateOrderStatusService({
         },
         body: JSON.stringify({
             status: status.toUpperCase(),
+            tracking_code: trackingCode?.trim() || '',
         }),
     });
 

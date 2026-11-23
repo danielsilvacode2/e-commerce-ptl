@@ -17,7 +17,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     try {
-      const savedTheme = localStorage.getItem('shopco_theme') as Theme | null
+      const savedTheme = localStorage.getItem('nero_theme') as Theme | null
       if (savedTheme === 'dark' || savedTheme === 'light') {
         setThemeState(savedTheme)
         applyTheme(savedTheme)
@@ -47,7 +47,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const nextTheme: Theme = theme === 'light' ? 'dark' : 'light'
     setThemeState(nextTheme)
     try {
-      localStorage.setItem('shopco_theme', nextTheme)
+      localStorage.setItem('nero_theme', nextTheme)
     } catch {
       // fallback
     }
@@ -57,7 +57,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   function setTheme(t: Theme) {
     setThemeState(t)
     try {
-      localStorage.setItem('shopco_theme', t)
+      localStorage.setItem('nero_theme', t)
     } catch {
       // fallback
     }

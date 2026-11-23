@@ -38,9 +38,12 @@ const formatDate = (value: string) => {
 
 const FILTER_TABS = [
     { label: 'Todos', value: '' },
-    { label: 'Em Separação', value: 'PREPARING' },
+    { label: 'Estornos Solicitados', value: 'REFUND_REQUESTED' },
+    { label: 'Aguardando Pagamento', value: 'PENDING_PAYMENT' },
+    { label: 'Em Preparação', value: 'PREPARING' },
     { label: 'Enviados', value: 'SHIPPED' },
     { label: 'Entregues', value: 'DELIVERED' },
+    { label: 'Estornados', value: 'REFUNDED' },
     { label: 'Cancelados', value: 'CANCELED' },
 ]
 
@@ -198,10 +201,22 @@ export default function AdminOrdersClient() {
                                                 </div>
                                             </div>
 
-                                            <span className="rounded-full bg-[#F2F0F1] dark:bg-[#252525] px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-black dark:text-white">
+                                            <span
+                                                className={`rounded-full px-3.5 py-1 text-xs font-bold uppercase tracking-wider ${
+                                                    order.status === 'REFUND_REQUESTED'
+                                                        ? 'bg-purple-600 text-white'
+                                                        : 'bg-[#F2F0F1] dark:bg-[#252525] text-black dark:text-white'
+                                                }`}
+                                            >
                                                 {statusConfig.label}
                                             </span>
                                         </div>
+
+                                        {order.status === 'REFUND_REQUESTED' && order.refund_reason && (
+                                            <div className="mt-3 rounded-2xl border border-purple-500/30 bg-purple-50 dark:bg-purple-950/30 px-4 py-2.5 text-xs text-purple-900 dark:text-purple-200">
+                                                <strong>Motivo do estorno:</strong> {order.refund_reason}
+                                            </div>
+                                        )}
 
                                         <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
                                             <div>

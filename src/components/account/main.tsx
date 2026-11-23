@@ -76,7 +76,7 @@ export default function MainAccount() {
                 <div className="absolute inset-0 bg-radial from-neutral-200/50 to-transparent pointer-events-none" />
 
                 <Link href="/" className="font-display text-3xl font-extrabold uppercase tracking-tight text-black z-10">
-                    SHOP.CO
+                    NERO
                 </Link>
 
                 <div className="max-w-md z-10">
@@ -87,12 +87,12 @@ export default function MainAccount() {
                         {user ? `OLÁ, ${user.name.split(" ")[0]}` : "MINHA CONTA"}
                     </h1>
                     <p className="mt-4 text-sm text-neutral-600 leading-relaxed font-sans">
-                        Gerencie seus dados pessoais, visualize pedidos ativos e aproveite as vantagens de membro SHOP.CO.
+                        Gerencie seus dados pessoais, visualize pedidos ativos e aproveite as vantagens de membro NERO.
                     </p>
                 </div>
 
                 <div className="text-xs uppercase tracking-widest text-neutral-500 z-10 font-mono">
-                    SHOP.CO PROFILE 2026
+                    NERO PROFILE 2026
                 </div>
             </section>
 
@@ -101,7 +101,7 @@ export default function MainAccount() {
                 <div className="w-full max-w-[420px]">
                     <div className="lg:hidden mb-8">
                         <Link href="/" className="font-display text-2xl font-extrabold uppercase tracking-tight text-black">
-                            SHOP.CO
+                            NERO
                         </Link>
                     </div>
 

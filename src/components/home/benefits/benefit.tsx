@@ -4,7 +4,7 @@ export default function BenefitsHome() {
   const BENEFITS = [
     {
       title: 'Entrega Rápida e Segura',
-      sub: 'Frete grátis para compras acima de R$ 199',
+      sub: 'Frete grátis em todas as compras',
       icon: Truck,
     },
     {

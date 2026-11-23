@@ -1,7 +1,7 @@
 import VerifyEmailMain from '@/src/components/verify-email/main'
 
 export const metadata = {
-    title: 'Verificar E-mail | SHOP.CO',
+    title: 'Verificar E-mail | NERO',
     description: 'Confirme o código enviado para o seu endereço de e-mail.',
 }
 
