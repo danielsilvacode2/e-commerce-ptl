@@ -16,6 +16,7 @@ interface HeaderHomeProps {
 
 export default function HeaderHome({ refreshKey = 0 }: HeaderHomeProps) {
   const [user, setUser] = useState<UserResponse | null>(null)
+  const [authLoaded, setAuthLoaded] = useState(false)
   const [painelAdmin, setPainelAdmin] = useState<boolean>(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [cart, setCart] = useState<CartResponse | null>(null)
@@ -23,22 +24,33 @@ export default function HeaderHome({ refreshKey = 0 }: HeaderHomeProps) {
   const router = useRouter()
 
   useEffect(() => {
-    ReadMe().then((dataUser) => {
-      setUser(dataUser)
-      if (dataUser?.role === 'admin') {
-        setPainelAdmin(true)
-      }
-    })
+    let cancelled = false
+    ReadMe()
+      .then((dataUser) => {
+        if (cancelled) return
+        setUser(dataUser)
+        if (dataUser?.role === 'admin') {
+          setPainelAdmin(true)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setUser(null)
+      })
+      .finally(() => {
+        if (!cancelled) setAuthLoaded(true)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   useEffect(() => {
+    if (!authLoaded) return
     let cancelled = false
 
     async function fetchCart() {
       try {
-        const dataUser = await ReadMe()
-        if (cancelled) return
-        if (dataUser) {
+        if (user) {
           const res = await ReadCart()
           if (!cancelled) setCart(res)
         } else {
@@ -76,7 +88,7 @@ export default function HeaderHome({ refreshKey = 0 }: HeaderHomeProps) {
       window.removeEventListener(GUEST_CART_EVENT, handleGuestCartUpdate)
       window.removeEventListener('storage', handleStorage)
     }
-  }, [refreshKey, user])
+  }, [authLoaded, refreshKey, user])
 
   const totalCartItems = cart?.list?.reduce((acc, item) => acc + (item.quantity || 1), 0) ?? 0
 
