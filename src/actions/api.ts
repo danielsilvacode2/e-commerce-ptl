@@ -15,7 +15,7 @@ export default function ApiUrlBase(): string {
     if (process.env.NEXT_PUBLIC_API_URL?.trim()) {
       return normalizeBaseUrl(process.env.NEXT_PUBLIC_API_URL)
     }
-    return 'http://localhost:5000/api/v1'
+    return 'https://url-da-sua-api-no-render.onrender.com/api/v1 '
   }
 
   if (process.env.NEXT_PUBLIC_API_URL?.trim()) {
