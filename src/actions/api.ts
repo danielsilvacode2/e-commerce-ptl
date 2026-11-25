@@ -15,11 +15,11 @@ export default function ApiUrlBase(): string {
     if (process.env.NEXT_PUBLIC_API_URL?.trim()) {
       return normalizeBaseUrl(process.env.NEXT_PUBLIC_API_URL)
     }
-    return 'https://url-da-sua-api-no-render.onrender.com/api/v1'
+    return 'https://e-commerce-api-d5lu.onrender.com/api/v1'
   }
 
   if (process.env.NEXT_PUBLIC_API_URL?.trim()) {
     return normalizeBaseUrl(process.env.NEXT_PUBLIC_API_URL)
   }
-  return 'https://url-da-sua-api-no-render.onrender.com/api/v1'
+  return 'https://e-commerce-api-d5lu.onrender.com/api/v1'
 }
