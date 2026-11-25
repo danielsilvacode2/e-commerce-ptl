@@ -39,6 +39,18 @@ export function isMercadoPagoEnabled(): boolean {
     return getMercadoPagoPublicKey().length > 0;
 }
 
+/**
+ * Pré-carrega o SDK do Mercado Pago em segundo plano (ex.: ao abrir a aba de cartão),
+ * evitando atraso perceptível no clique do botão Pagar.
+ */
+export function preloadMercadoPagoSDK(): void {
+    if (typeof window === 'undefined' || !isMercadoPagoEnabled()) return;
+    void loadMercadoPagoSDK().catch(() => {
+        // Falha silenciosa no pré-carregamento; será retentada na submissão
+        sdkLoadPromise = null;
+    });
+}
+
 function loadMercadoPagoSDK(): Promise<void> {
     if (typeof window === 'undefined') {
         return Promise.reject(new Error('SDK do Mercado Pago disponível apenas no navegador.'));
@@ -112,30 +124,28 @@ export async function tokenizeCardWithMercadoPago(
     const digits = input.cardNumber.replace(/\D/g, '');
     const cpfDigits = input.cpf.replace(/\D/g, '');
 
-    let paymentMethodId = detectFallbackPaymentMethodId(digits);
-    if (digits.length >= 6) {
-        try {
-            const pmRes = await mp.getPaymentMethods({ bin: digits.slice(0, 6) });
-            const detected = pmRes?.results?.[0]?.id;
-            if (detected) {
-                paymentMethodId = detected;
-            }
-        } catch {
-            // Mantém fallback por BIN
-        }
-    }
+    const paymentMethodPromise: Promise<string> =
+        digits.length >= 6
+            ? mp
+                  .getPaymentMethods({ bin: digits.slice(0, 6) })
+                  .then((pmRes) => pmRes?.results?.[0]?.id || detectFallbackPaymentMethodId(digits))
+                  .catch(() => detectFallbackPaymentMethodId(digits))
+            : Promise.resolve(detectFallbackPaymentMethodId(digits));
 
+    const tokenPromise = mp.createCardToken({
+        cardNumber: digits,
+        cardholderName: input.cardHolderName.trim().toUpperCase(),
+        cardExpirationMonth: input.expMonth.padStart(2, '0'),
+        cardExpirationYear: input.expYear.length === 2 ? `20${input.expYear}` : input.expYear,
+        securityCode: input.cvv.replace(/\D/g, ''),
+        identificationType: 'CPF',
+        identificationNumber: cpfDigits,
+    });
+
+    let paymentMethodId: string;
     let tokenRes: MercadoPagoTokenResponse;
     try {
-        tokenRes = await mp.createCardToken({
-            cardNumber: digits,
-            cardholderName: input.cardHolderName.trim().toUpperCase(),
-            cardExpirationMonth: input.expMonth.padStart(2, '0'),
-            cardExpirationYear: input.expYear.length === 2 ? `20${input.expYear}` : input.expYear,
-            securityCode: input.cvv.replace(/\D/g, ''),
-            identificationType: 'CPF',
-            identificationNumber: cpfDigits,
-        });
+        [paymentMethodId, tokenRes] = await Promise.all([paymentMethodPromise, tokenPromise]);
     } catch (err: unknown) {
         throw new Error(extractMercadoPagoErrorMessage(err));
     }

@@ -1,164 +1,299 @@
 'use client'
 
-import ReadMe, { UserResponse } from "@/src/actions/me/readMe"
-import LogoutService from "@/src/actions/auth/logout"
-import { guestCartService } from "@/src/services/guest-cart"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
-import { User, LogOut, Package, ArrowRight } from "lucide-react"
+import LogoutService from '@/src/actions/auth/logout'
+import { guestCartService } from '@/src/services/guest-cart'
+import { useSession } from '@/src/components/providers/session-provider'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { User, LogOut, Package, MessageCircle, ShieldCheck, ArrowUpRight } from 'lucide-react'
+import SupportChat from '@/src/components/account/support-chat'
+import SecurityPasswordReset from '@/src/components/account/security-password-reset'
+import { Skeleton } from '@/src/components/ui/skeletons'
 
-function formatDate(value: string): string {
-    const date = new Date(value)
-    if (isNaN(date.getTime())) return "—"
-    return date.toLocaleString("pt-BR", { dateStyle: "long", timeStyle: "short" })
+type AccountTab = 'profile' | 'security' | 'support'
+
+interface TabItem {
+  id: AccountTab
+  label: string
+  icon: typeof User
 }
 
-function Field({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
-    return (
-        <div className="flex flex-col gap-1 border-b border-black/5 pb-3">
-            <dt className="text-xs uppercase tracking-wider text-neutral-500 font-semibold">{label}</dt>
-            <dd className={`text-sm text-black font-medium break-all ${mono ? "font-mono text-neutral-600 text-xs" : ""}`}>
-                {value || "—"}
-            </dd>
-        </div>
-    )
+const TABS: TabItem[] = [
+  { id: 'profile', label: 'Meus Dados', icon: User },
+  { id: 'security', label: 'Segurança', icon: ShieldCheck },
+  { id: 'support', label: 'Atendimento', icon: MessageCircle },
+]
+
+function formatDate(value: string): string {
+  const date = new Date(value)
+  if (isNaN(date.getTime())) return '—'
+  return date.toLocaleString('pt-BR', { dateStyle: 'long', timeStyle: 'short' })
+}
+
+function Field({
+  label,
+  value,
+  mono = false,
+  wide = false,
+}: {
+  label: string
+  value: string
+  mono?: boolean
+  wide?: boolean
+}) {
+  return (
+    <div
+      className={`flex flex-col gap-1 border-b border-black/5 dark:border-white/10 pb-4 ${
+        wide ? 'sm:col-span-2' : ''
+      }`}
+    >
+      <dt className="text-xs uppercase tracking-wider text-neutral-500 dark:text-neutral-400 font-semibold">
+        {label}
+      </dt>
+      <dd
+        className={`text-sm text-black dark:text-white font-medium break-all ${
+          mono ? 'font-mono text-neutral-600 dark:text-neutral-300 text-xs' : ''
+        }`}
+      >
+        {value || '—'}
+      </dd>
+    </div>
+  )
 }
 
 export default function MainAccount() {
-    const router = useRouter()
-    const [user, setUser] = useState<UserResponse | null>(null)
-    const [loading, setLoading] = useState<boolean>(true)
-    const [error, setError] = useState<string>("")
+  const router = useRouter()
+  const { user, authLoaded, clearSession } = useSession()
+  const [activeTab, setActiveTab] = useState<AccountTab>('profile')
+  const [visitedTabs, setVisitedTabs] = useState<Set<AccountTab>>(() => new Set(['profile']))
 
-    useEffect(() => {
-        let active = true
+  const loading = !authLoaded
 
-        async function load() {
-            try {
-                const data = await ReadMe()
-                if (!active) return
-                if (!data) {
-                    router.replace("/login")
-                    return
-                }
-                setUser(data)
-            } catch {
-                if (active) setError("Não foi possível carregar os dados da conta. Tente novamente.")
-                router.push("/login")
-            } finally {
-                if (active) setLoading(false)
-            }
-        }
-
-        load()
-        return () => {
-            active = false
-        }
-    }, [router])
-
-    async function handlerLogout() {
-        try {
-            await LogoutService()
-            // Garante que o guest cart não receba lixo de usuário logado
-            guestCartService.clearCart()
-        } catch (err) {
-            console.log("erro ao sair da conta", err)
-        } finally {
-            router.push("/login")
-        }
+  useEffect(() => {
+    if (authLoaded && !user) {
+      router.replace('/login')
     }
+  }, [authLoaded, user, router])
 
-    return (
-        <main className="min-h-screen w-full grid lg:grid-cols-[1.1fr_1fr] bg-white font-sans text-black">
-            {/* Painel lateral */}
-            <section className="hidden lg:flex flex-col justify-between p-16 bg-[#F2F0F1] border-r border-black/10 relative overflow-hidden">
-                <div className="absolute inset-0 bg-radial from-neutral-200/50 to-transparent pointer-events-none" />
+  function handleSelectTab(tab: AccountTab) {
+    setActiveTab(tab)
+    setVisitedTabs((prev) => {
+      if (prev.has(tab)) return prev
+      const next = new Set(prev)
+      next.add(tab)
+      return next
+    })
+  }
 
-                <Link href="/" className="font-display text-3xl font-extrabold uppercase tracking-tight text-black z-10">
-                    NERO
+  async function handlerLogout() {
+    try {
+      await LogoutService()
+      guestCartService.clearCart()
+      clearSession()
+    } catch (err) {
+      console.error('Erro ao sair da conta:', err)
+    } finally {
+      router.push('/login')
+    }
+  }
+
+  return (
+    <main className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-10 sm:py-14 font-sans text-black dark:text-white transition-colors">
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400 mb-6 uppercase tracking-wider font-medium">
+        <Link href="/" className="hover:text-black dark:hover:text-white transition-colors">
+          Início
+        </Link>
+        <span>/</span>
+        <span className="text-black dark:text-white font-bold">Minha Conta</span>
+      </div>
+
+      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-black/10 dark:border-white/10 pb-6 mb-8">
+        <div>
+          <h1 className="font-display text-3xl sm:text-4xl font-extrabold uppercase tracking-tight text-black dark:text-white">
+            MINHA CONTA
+          </h1>
+          <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+            Gerencie seus dados pessoais, segurança e atendimento.
+          </p>
+        </div>
+        <Link
+          href="/pedidos"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-black dark:text-white underline underline-offset-4 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-black dark:focus-visible:outline-white rounded"
+        >
+          Ver Meus Pedidos <ArrowUpRight size={14} aria-hidden="true" />
+        </Link>
+      </div>
+
+      {loading && (
+        <div
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8 items-start"
+        >
+          <span className="sr-only">Carregando informações da conta...</span>
+          <div className="space-y-4">
+            <Skeleton className="h-28 w-full rounded-3xl" />
+            <Skeleton className="h-11 w-full rounded-full" />
+            <Skeleton className="h-11 w-full rounded-full" />
+            <Skeleton className="h-11 w-full rounded-full" />
+          </div>
+          <Skeleton className="h-72 w-full rounded-3xl" />
+        </div>
+      )}
+
+      {user && (
+        <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8 items-start">
+          <aside className="space-y-4">
+            <div className="rounded-3xl bg-[#F2F0F1] dark:bg-[#1a1a1a] border border-black/5 dark:border-white/10 p-6 flex items-center gap-4">
+              <div className="h-14 w-14 shrink-0 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center font-display font-bold text-xl uppercase">
+                {user.name ? user.name[0] : <User size={20} aria-hidden="true" />}
+              </div>
+              <div className="min-w-0">
+                <p className="font-display text-lg font-bold uppercase tracking-tight truncate">
+                  {user.name}
+                </p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
+                  {user.email}
+                </p>
+                <span className="mt-1.5 inline-block rounded-full bg-black dark:bg-white px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-white dark:text-black">
+                  {user.role === 'admin' ? 'Administrador' : 'Cliente'}
+                </span>
+              </div>
+            </div>
+
+            <nav aria-label="Seções da conta">
+              <div role="tablist" aria-orientation="vertical" className="space-y-1.5">
+                {TABS.map((tab) => {
+                  const Icon = tab.icon
+                  const selected = activeTab === tab.id
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      role="tab"
+                      id={`tab-${tab.id}`}
+                      aria-selected={selected}
+                      aria-controls={`panel-${tab.id}`}
+                      onClick={() => handleSelectTab(tab.id)}
+                      className={`flex h-11 w-full items-center gap-3 rounded-full px-5 text-xs font-semibold uppercase tracking-wider transition-colors focus-visible:outline-2 focus-visible:outline-black dark:focus-visible:outline-white cursor-pointer ${
+                        selected
+                          ? 'bg-black dark:bg-white text-white dark:text-black'
+                          : 'bg-[#F2F0F1]/70 dark:bg-[#1a1a1a] text-black dark:text-white hover:bg-[#F2F0F1] dark:hover:bg-[#242424]'
+                      }`}
+                    >
+                      <Icon size={16} aria-hidden="true" /> {tab.label}
+                    </button>
+                  )
+                })}
+              </div>
+
+              <div className="mt-4 space-y-1.5 border-t border-black/10 dark:border-white/10 pt-4">
+                <Link
+                  href="/pedidos"
+                  className="flex h-11 w-full items-center gap-3 rounded-full px-5 text-xs font-semibold uppercase tracking-wider text-black dark:text-white transition-colors hover:bg-[#F2F0F1] dark:hover:bg-[#242424] focus-visible:outline-2 focus-visible:outline-black dark:focus-visible:outline-white"
+                >
+                  <Package size={16} aria-hidden="true" /> Meus Pedidos
                 </Link>
+                <button
+                  type="button"
+                  onClick={handlerLogout}
+                  className="flex h-11 w-full items-center gap-3 rounded-full px-5 text-xs font-semibold uppercase tracking-wider text-black dark:text-white transition-colors hover:bg-red-50 dark:hover:bg-red-950/40 hover:text-red-600 dark:hover:text-red-400 focus-visible:outline-2 focus-visible:outline-black dark:focus-visible:outline-white cursor-pointer"
+                >
+                  <LogOut size={16} aria-hidden="true" /> Sair da Conta
+                </button>
+              </div>
+            </nav>
+          </aside>
 
-                <div className="max-w-md z-10">
-                    <span className="inline-block px-3.5 py-1 rounded-full bg-black text-white text-[10px] font-bold uppercase tracking-widest mb-4">
-                        Perfil do Usuário
-                    </span>
-                    <h1 className="font-display text-5xl font-extrabold uppercase tracking-tight leading-[0.95] text-black">
-                        {user ? `OLÁ, ${user.name.split(" ")[0]}` : "MINHA CONTA"}
-                    </h1>
-                    <p className="mt-4 text-sm text-neutral-600 leading-relaxed font-sans">
-                        Gerencie seus dados pessoais, visualize pedidos ativos e aproveite as vantagens de membro NERO.
-                    </p>
-                </div>
+          <div className="min-w-0">
+            <div
+              id="panel-profile"
+              role="tabpanel"
+              aria-labelledby="tab-profile"
+              className={activeTab === 'profile' ? 'block space-y-6' : 'hidden'}
+            >
+              <section className="rounded-3xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#181818] p-6 sm:p-8">
+                <h2 className="font-display text-2xl font-bold uppercase tracking-tight">
+                  Dados Pessoais
+                </h2>
+                <p className="mt-1 mb-6 text-sm text-neutral-600 dark:text-neutral-400">
+                  Informações cadastradas na sua conta.
+                </p>
+                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <Field label="Nome Completo" value={user.name} />
+                  <Field label="E-mail" value={user.email} />
+                  <Field
+                    label="Tipo de Conta"
+                    value={user.role === 'admin' ? 'Administrador' : 'Cliente'}
+                  />
+                  <Field label="Membro desde" value={formatDate(user.created_at)} />
+                  <Field label="ID da Conta" value={user.Id} mono wide />
+                </dl>
+              </section>
 
-                <div className="text-xs uppercase tracking-widest text-neutral-500 z-10 font-mono">
-                    NERO PROFILE 2026
-                </div>
-            </section>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <Link
+                  href="/pedidos"
+                  className="flex flex-col gap-2 rounded-3xl bg-[#F2F0F1] dark:bg-[#1a1a1a] border border-black/5 dark:border-white/10 p-5 transition-colors hover:bg-neutral-200 dark:hover:bg-[#242424] focus-visible:outline-2 focus-visible:outline-black dark:focus-visible:outline-white"
+                >
+                  <Package size={20} aria-hidden="true" />
+                  <span className="text-xs font-bold uppercase tracking-wider">Meus Pedidos</span>
+                  <span className="text-xs text-neutral-600 dark:text-neutral-400">
+                    Acompanhe suas compras.
+                  </span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => handleSelectTab('security')}
+                  className="flex flex-col items-start gap-2 rounded-3xl bg-[#F2F0F1] dark:bg-[#1a1a1a] border border-black/5 dark:border-white/10 p-5 text-left transition-colors hover:bg-neutral-200 dark:hover:bg-[#242424] focus-visible:outline-2 focus-visible:outline-black dark:focus-visible:outline-white cursor-pointer"
+                >
+                  <ShieldCheck size={20} aria-hidden="true" />
+                  <span className="text-xs font-bold uppercase tracking-wider">Redefinir Senha</span>
+                  <span className="text-xs text-neutral-600 dark:text-neutral-400">
+                    Altere sua senha com código.
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSelectTab('support')}
+                  className="flex flex-col items-start gap-2 rounded-3xl bg-[#F2F0F1] dark:bg-[#1a1a1a] border border-black/5 dark:border-white/10 p-5 text-left transition-colors hover:bg-neutral-200 dark:hover:bg-[#242424] focus-visible:outline-2 focus-visible:outline-black dark:focus-visible:outline-white cursor-pointer"
+                >
+                  <MessageCircle size={20} aria-hidden="true" />
+                  <span className="text-xs font-bold uppercase tracking-wider">Atendimento</span>
+                  <span className="text-xs text-neutral-600 dark:text-neutral-400">
+                    Tire dúvidas sobre pedidos.
+                  </span>
+                </button>
+              </div>
+            </div>
 
-            {/* Dados da conta */}
-            <section className="flex items-center justify-center px-6 py-12 bg-white">
-                <div className="w-full max-w-[420px]">
-                    <div className="lg:hidden mb-8">
-                        <Link href="/" className="font-display text-2xl font-extrabold uppercase tracking-tight text-black">
-                            NERO
-                        </Link>
-                    </div>
+            {visitedTabs.has('security') && (
+              <div
+                id="panel-security"
+                role="tabpanel"
+                aria-labelledby="tab-security"
+                className={activeTab === 'security' ? 'block max-w-xl' : 'hidden'}
+              >
+                <SecurityPasswordReset email={user.email} />
+              </div>
+            )}
 
-                    <div className="flex items-center gap-4 mb-6">
-                        <div className="h-16 w-16 rounded-full bg-black text-white flex items-center justify-center font-display font-bold text-2xl uppercase">
-                            {user?.name ? user.name[0] : <User size={24} />}
-                        </div>
-                        <div>
-                            <h2 className="font-display text-2xl font-bold uppercase tracking-tight text-black">
-                                {user?.name || "Minha Conta"}
-                            </h2>
-                            <p className="text-xs text-neutral-500 font-sans">
-                                Membro registrado
-                            </p>
-                        </div>
-                    </div>
-
-                    {loading && (
-                        <p role="status" className="py-8 text-xs font-semibold uppercase tracking-wider text-neutral-500">
-                            Carregando informações...
-                        </p>
-                    )}
-
-                    {error && (
-                        <div className="p-4 rounded-2xl bg-red-50 text-red-600 text-xs font-medium border border-red-200 mb-6">
-                            {error}
-                        </div>
-                    )}
-
-                    {user && (
-                        <div className="rounded-3xl bg-[#F2F0F1] p-6 sm:p-8 space-y-6">
-                            <dl className="space-y-3">
-                                <Field label="Nome Completo" value={user.name} />
-                                <Field label="E-mail" value={user.email} />
-                                <Field label="Tipo de Conta" value={user.role === 'admin' ? 'Administrador' : 'Cliente'} />
-                                <Field label="Membro desde" value={formatDate(user.created_at)} />
-                                <Field label="ID" value={user.Id} mono />
-                            </dl>
-
-                            <div className="flex flex-col gap-3 pt-2">
-                                <Link
-                                    href="/pedidos"
-                                    className="flex h-12 items-center justify-center gap-2 rounded-full bg-black text-white text-xs font-semibold uppercase tracking-wider hover:bg-neutral-800 transition-colors"
-                                >
-                                    <Package size={16} /> Ver Meus Pedidos
-                                </Link>
-                                <button
-                                    onClick={handlerLogout}
-                                    className="flex h-12 items-center justify-center gap-2 rounded-full border border-black/15 bg-white text-black text-xs font-semibold uppercase tracking-wider hover:bg-neutral-100 transition-colors cursor-pointer"
-                                >
-                                    <LogOut size={16} /> Sair da Conta
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </section>
-        </main>
-    )
+            {visitedTabs.has('support') && (
+              <div
+                id="panel-support"
+                role="tabpanel"
+                aria-labelledby="tab-support"
+                className={activeTab === 'support' ? 'block' : 'hidden'}
+              >
+                <SupportChat />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </main>
+  )
 }

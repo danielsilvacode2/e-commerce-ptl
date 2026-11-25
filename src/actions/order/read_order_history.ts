@@ -7,9 +7,6 @@ export default async function ReadOrderHistoryService(orderId: string): Promise<
     const res = await fetch(`${baseUrl}/orders/${orderId}/history`, {
         method: 'GET',
         credentials: 'include',
-        headers: {
-            'Content-Type': 'application/json',
-        },
     });
 
     if (res.status === 401) {

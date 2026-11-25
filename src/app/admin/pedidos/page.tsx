@@ -1,37 +1,42 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import NavProducts from '@/src/components/products/nav/nav';
-import AdminOrdersClient from '@/src/components/admin/pedidos/main';
-import ReadMe from '@/src/actions/me/readMe';
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import NavProducts from '@/src/components/products/nav/nav'
+import AdminOrdersClient from '@/src/components/admin/pedidos/main'
+import { useSession } from '@/src/components/providers/session-provider'
+import { Skeleton } from '@/src/components/ui/skeletons'
 
 export default function AdminOrdersPage() {
-    const router = useRouter();
-    const [authorized, setAuthorized] = useState(false);
+  const router = useRouter()
+  const { user, authLoaded } = useSession()
+  const authorized = authLoaded && user?.role === 'admin'
 
-    useEffect(() => {
-        ReadMe()
-            .then((dataUser) => {
-                if (dataUser?.role !== 'admin') {
-                    router.push('/');
-                } else {
-                    setAuthorized(true);
-                }
-            })
-            .catch(() => {
-                router.push('/');
-            });
-    }, [router]);
-
-    if (!authorized) {
-        return null;
+  useEffect(() => {
+    if (authLoaded && user?.role !== 'admin') {
+      router.replace('/')
     }
+  }, [authLoaded, user, router])
 
+  if (!authorized) {
     return (
-        <div className="min-h-screen w-full flex flex-col md:flex-row bg-white dark:bg-[#121212] font-sans text-black dark:text-white transition-colors">
-            <NavProducts active="orders" />
-            <AdminOrdersClient />
-        </div>
-    );
+      <div className="min-h-screen w-full flex flex-col md:flex-row bg-white dark:bg-[#121212] font-sans text-black dark:text-white transition-colors">
+        <NavProducts active="orders" />
+        <main className="flex-1 px-6 py-8">
+          <div className="mx-auto max-w-5xl space-y-4">
+            <Skeleton className="h-10 w-64 rounded-2xl" />
+            <Skeleton className="h-28 w-full rounded-3xl" />
+            <Skeleton className="h-28 w-full rounded-3xl" />
+          </div>
+        </main>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen w-full flex flex-col md:flex-row bg-white dark:bg-[#121212] font-sans text-black dark:text-white transition-colors">
+      <NavProducts active="orders" />
+      <AdminOrdersClient />
+    </div>
+  )
 }

@@ -15,12 +15,16 @@
 :root {
   --bg-main: #ffffff;
   --text-main: #000000;
+  --skeleton-base: #eceae7;
+  --skeleton-highlight: rgba(255, 255, 255, 0.65);
 }
 
 [data-theme="dark"],
 .dark {
   --bg-main: #121212;
   --text-main: #ffffff;
+  --skeleton-base: #1f1f1f;
+  --skeleton-highlight: rgba(255, 255, 255, 0.08);
 }
 
 @layer base {
@@ -29,5 +33,122 @@
     color: var(--text-main);
     font-family: var(--font-dm-sans), sans-serif;
     transition: background-color 0.25s ease, color 0.25s ease;
+  }
+}
+
+/* Shimmer GPU-only (transform) para skeletons */
+@keyframes nero-shimmer-slide {
+  0% {
+    transform: translate3d(-100%, 0, 0);
+  }
+  100% {
+    transform: translate3d(100%, 0, 0);
+  }
+}
+
+/* Animações suaves GPU-only (exclusivamente transform e opacity) */
+@keyframes nero-toast-in {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes nero-toast-bar {
+  0% {
+    transform: scaleX(1);
+  }
+  100% {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes nero-badge-pop {
+  0% {
+    transform: scale(0.75);
+    opacity: 0.65;
+  }
+  55% {
+    transform: scale(1.22);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes nero-btn-confirm {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.85;
+  }
+  55% {
+    transform: scale(1.03);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.nero-shimmer {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--skeleton-base);
+}
+
+.nero-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translate3d(-100%, 0, 0);
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--skeleton-highlight) 50%,
+    transparent 100%
+  );
+  animation: nero-shimmer-slide 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  will-change: transform;
+}
+
+.nero-toast-enter {
+  animation: nero-toast-in 380ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+}
+
+.nero-toast-progress {
+  transform-origin: left center;
+  animation: nero-toast-bar 3400ms linear both;
+  will-change: transform;
+}
+
+.nero-badge-pop {
+  animation: nero-badge-pop 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+}
+
+.nero-btn-confirm {
+  animation: nero-btn-confirm 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nero-shimmer::after {
+    animation: none;
+    display: none;
+  }
+
+  .nero-toast-enter,
+  .nero-toast-progress,
+  .nero-badge-pop,
+  .nero-btn-confirm {
+    animation: none;
   }
 }

@@ -26,7 +26,10 @@ import ReadOrderByIdService from '@/src/actions/order/read_order_by_id'
 import ReadPaymentService from '@/src/actions/payment/read_payment'
 import ProcessPaymentService from '@/src/actions/payment/process_payment'
 import ConfirmPaymentService, { ConfirmPaymentAction } from '@/src/actions/payment/confirm_payment'
-import { isMercadoPagoEnabled, tokenizeCardWithMercadoPago } from '@/src/lib/mercado-pago'
+import { isMercadoPagoEnabled, preloadMercadoPagoSDK, tokenizeCardWithMercadoPago } from '@/src/lib/mercado-pago'
+import { classifyErrorVariant, ErrorStateVariant, logClientError } from '@/src/lib/api-error'
+import ErrorState from '@/src/components/ui/error-state'
+import { PaymentPageSkeleton } from '@/src/components/ui/skeletons'
 
 const formatPrice = (value: number | string) =>
     Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -77,7 +80,7 @@ export default function OrderPaymentClient({ orderId }: OrderPaymentClientProps)
     const [order, setOrder] = useState<OrderResponse | null>(null)
     const [payment, setPayment] = useState<PaymentResponse | null>(null)
     const [loading, setLoading] = useState(true)
-    const [error, setError] = useState('')
+    const [errorVariant, setErrorVariant] = useState<ErrorStateVariant | null>(null)
 
     // Abas Pix / Cartao
     const [activeTab, setActiveTab] = useState<PaymentMethod>('PIX')
@@ -102,12 +105,16 @@ export default function OrderPaymentClient({ orderId }: OrderPaymentClientProps)
     const pixIdempotencyKeyRef = useRef<string | null>(null)
     const cardIdempotencyKeyRef = useRef<string | null>(null)
     const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+    const inFlightRef = useRef<boolean>(false)
+    const expiryRefreshTriggeredRef = useRef<boolean>(false)
 
     const loadData = useCallback(
         async (silent = false) => {
+            if (silent && inFlightRef.current) return
+            inFlightRef.current = true
             if (!silent) {
                 setLoading(true)
-                setError('')
+                setErrorVariant(null)
             }
             try {
                 const [orderData, paymentData] = await Promise.all([
@@ -121,10 +128,12 @@ export default function OrderPaymentClient({ orderId }: OrderPaymentClientProps)
                     router.push(`/login?redirect=/pedidos/${orderId}/pagamento`)
                     return
                 }
+                logClientError('OrderPaymentClient', err, { orderId, silent })
                 if (!silent) {
-                    setError(err instanceof Error ? err.message : 'Erro ao carregar dados do pagamento.')
+                    setErrorVariant(classifyErrorVariant(err))
                 }
             } finally {
+                inFlightRef.current = false
                 if (!silent) setLoading(false)
             }
         },
@@ -150,7 +159,8 @@ export default function OrderPaymentClient({ orderId }: OrderPaymentClientProps)
                     router.push(`/login?redirect=/pedidos/${orderId}/pagamento`)
                     return
                 }
-                setError(err instanceof Error ? err.message : 'Erro ao carregar dados do pagamento.')
+                logClientError('OrderPaymentClient:init', err, { orderId })
+                setErrorVariant(classifyErrorVariant(err))
             })
             .finally(() => {
                 if (active) setLoading(false)
@@ -161,36 +171,61 @@ export default function OrderPaymentClient({ orderId }: OrderPaymentClientProps)
         }
     }, [orderId, router])
 
-    // Polling controlado enquanto o pedido estiver aguardando pagamento
+    // Pré-carrega o SDK do Mercado Pago ao abrir a aba de cartão de crédito
     useEffect(() => {
-        if (!order || order.status !== 'PENDING_PAYMENT') {
+        if (mpEnabled && activeTab === 'CREDIT_CARD') {
+            preloadMercadoPagoSDK()
+        }
+    }, [mpEnabled, activeTab])
+
+    const orderStatus = order?.status
+
+    // Polling controlado enquanto o pedido estiver aguardando pagamento (pausa com a aba oculta)
+    useEffect(() => {
+        if (orderStatus !== 'PENDING_PAYMENT') {
             if (pollingRef.current) clearInterval(pollingRef.current)
             return
         }
 
-        pollingRef.current = setInterval(() => {
-            loadData(true)
-        }, 4000)
+        const tick = () => {
+            if (typeof document !== 'undefined' && document.hidden) return
+            void loadData(true)
+        }
+
+        pollingRef.current = setInterval(tick, 6000)
+
+        const handleVisibilityChange = () => {
+            if (typeof document !== 'undefined' && !document.hidden) {
+                void loadData(true)
+            }
+        }
+        document.addEventListener('visibilitychange', handleVisibilityChange)
 
         return () => {
             if (pollingRef.current) clearInterval(pollingRef.current)
+            document.removeEventListener('visibilitychange', handleVisibilityChange)
         }
-    }, [order, loadData])
+    }, [orderStatus, loadData])
 
-    // Cronometro de expiracao em tempo real
+    // Cronometro de expiracao em tempo real (dispara refresh de expiração apenas uma vez)
     useEffect(() => {
         if (!payment?.expires_at || payment.status !== 'PENDING') {
+            expiryRefreshTriggeredRef.current = false
             return
         }
 
         const target = new Date(payment.expires_at).getTime()
         if (isNaN(target)) return
 
+        expiryRefreshTriggeredRef.current = false
+
         const timer = setInterval(() => {
             const current = Date.now()
             setNowTs(current)
-            if (target - current <= 0) {
-                loadData(true)
+            if (target - current <= 0 && !expiryRefreshTriggeredRef.current) {
+                expiryRefreshTriggeredRef.current = true
+                clearInterval(timer)
+                void loadData(true)
             }
         }, 1000)
 
@@ -345,43 +380,24 @@ export default function OrderPaymentClient({ orderId }: OrderPaymentClientProps)
     }
 
     if (loading) {
-        return (
-            <main className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-24 flex flex-col items-center justify-center">
-                <Loader2 size={36} className="animate-spin text-black dark:text-white" />
-                <p className="mt-4 text-xs font-semibold uppercase tracking-wider text-neutral-500">
-                    Carregando checkout de pagamento...
-                </p>
-            </main>
-        )
+        return <PaymentPageSkeleton />
     }
 
-    if (error || !order) {
+    if (errorVariant || !order) {
         return (
-            <main className="mx-auto max-w-4xl px-4 py-16">
-                <div className="rounded-3xl bg-[#F2F0F1] dark:bg-[#181818] p-10 text-center">
-                    <AlertCircle size={36} className="mx-auto mb-3 text-black dark:text-white" />
-                    <h1 className="font-display text-2xl font-bold uppercase tracking-tight">
-                        Não foi possível carregar o pagamento
-                    </h1>
-                    <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-                        {error || 'Pedido não encontrado.'}
-                    </p>
-                    <div className="mt-6 flex justify-center gap-3">
-                        <Link
-                            href="/pedidos"
-                            className="rounded-full border border-black/15 dark:border-white/20 px-6 py-3 text-xs font-semibold uppercase tracking-wider hover:bg-white dark:hover:bg-[#252525] transition-colors"
-                        >
-                            Meus Pedidos
-                        </Link>
-                        <button
-                            type="button"
-                            onClick={() => loadData(false)}
-                            className="rounded-full bg-black text-white dark:bg-white dark:text-black px-6 py-3 text-xs font-semibold uppercase tracking-wider hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors cursor-pointer"
-                        >
-                            Tentar Novamente
-                        </button>
-                    </div>
-                </div>
+            <main className="mx-auto max-w-2xl px-4 py-16">
+                <ErrorState
+                    variant={errorVariant ?? 'not-found'}
+                    title={
+                        errorVariant === 'not-found' || !order
+                            ? 'Pedido não encontrado'
+                            : undefined
+                    }
+                    onRetry={() => loadData(false)}
+                    autoFocusRetry
+                    secondaryHref="/pedidos"
+                    secondaryLabel="Meus Pedidos"
+                />
             </main>
         )
     }

@@ -9,7 +9,6 @@ import {
     Loader2,
     Calendar,
     MapPin,
-    AlertCircle,
     ArrowUpRight,
     Search,
     User,
@@ -51,6 +50,7 @@ export default function AdminOrdersClient() {
     const [orders, setOrders] = useState<OrderResponse[]>([])
     const [statusFilter, setStatusFilter] = useState<string>('')
     const [userFilter, setUserFilter] = useState<string>('')
+    const [debouncedUserFilter, setDebouncedUserFilter] = useState<string>('')
     const [page, setPage] = useState<number>(1)
     const [totalPages, setTotalPages] = useState<number>(1)
     const [totalRows, setTotalRows] = useState<number>(0)
@@ -58,32 +58,41 @@ export default function AdminOrdersClient() {
     const [error, setError] = useState<string>('')
 
     useEffect(() => {
-        let active = true
+        const timer = setTimeout(() => {
+            setDebouncedUserFilter(userFilter.trim())
+        }, 350)
+        return () => clearTimeout(timer)
+    }, [userFilter])
+
+    useEffect(() => {
+        const controller = new AbortController()
 
         AdminReadAllOrdersService({
             page,
             limit: PAGE_LIMIT,
             status: statusFilter,
-            userId: userFilter.trim(),
+            userId: debouncedUserFilter,
+            signal: controller.signal,
         })
             .then((res) => {
-                if (!active) return
+                if (controller.signal.aborted) return
                 setOrders(res.data)
                 setTotalPages(res.total_pages)
                 setTotalRows(res.total_rows)
+                setError('')
             })
             .catch((err: unknown) => {
-                if (!active) return
+                if (controller.signal.aborted) return
                 setError(err instanceof Error ? err.message : 'Erro ao listar pedidos do painel.')
             })
             .finally(() => {
-                if (active) setLoading(false)
+                if (!controller.signal.aborted) setLoading(false)
             })
 
         return () => {
-            active = false
+            controller.abort()
         }
-    }, [page, statusFilter, userFilter])
+    }, [page, statusFilter, debouncedUserFilter])
 
     function handleFilterChange(val: string) {
         setStatusFilter(val)

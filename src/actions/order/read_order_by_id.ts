@@ -1,35 +1,27 @@
-import ApiUrlBase from '../api';
-import { OrderResponse, OrderApiEnvelope } from '@/src/types/order';
+import ApiUrlBase from '../api'
+import { ApiError, createHttpApiError, fetchWithTimeout } from '@/src/lib/api-error'
+import { OrderResponse, OrderApiEnvelope } from '@/src/types/order'
 
 export default async function ReadOrderByIdService(orderId: string): Promise<OrderResponse> {
-    const baseUrl = ApiUrlBase();
+  const baseUrl = ApiUrlBase()
 
-    const res = await fetch(`${baseUrl}/orders/${orderId}`, {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    });
+  const res = await fetchWithTimeout(`${baseUrl}/orders/${orderId}`, {
+    method: 'GET',
+    credentials: 'include',
+  })
 
-    if (res.status === 401) {
-        throw new Error('401');
-    }
+  if (!res.ok) {
+    throw createHttpApiError(res.status, 'ReadOrderByIdService')
+  }
 
-    if (res.status === 404) {
-        throw new Error('Pedido não encontrado.');
-    }
+  const json = (await res.json()) as OrderApiEnvelope<OrderResponse>
+  const body = json['Body:'] ?? json.Body
 
-    if (!res.ok) {
-        throw new Error('Erro ao carregar dados do pedido.');
-    }
+  if (!body) {
+    throw new ApiError('not-found', json.Response?.mensagem ?? 'Pedido não encontrado.', {
+      status: 404,
+    })
+  }
 
-    const json = (await res.json()) as OrderApiEnvelope<OrderResponse>;
-    const body = json['Body:'] ?? json.Body;
-
-    if (!body) {
-        throw new Error(json.Response?.mensagem ?? 'Pedido não encontrado.');
-    }
-
-    return body;
+  return body
 }

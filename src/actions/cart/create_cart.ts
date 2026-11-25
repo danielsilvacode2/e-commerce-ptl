@@ -1,29 +1,27 @@
-import ApiUrlBase from "../api";
+import ApiUrlBase from '../api'
+import { createHttpApiError, fetchWithTimeout } from '@/src/lib/api-error'
 
-
-interface cartRequest {
-    product_id: string,
-    quantity: number
+interface CartRequest {
+  product_id: string
+  quantity: number
 }
 
-export default async function CreateCart ({product_id, quantity}:cartRequest) {
+export default async function CreateCart({ product_id, quantity }: CartRequest) {
+  const urlBase = ApiUrlBase()
 
-    const urlBase = ApiUrlBase()
+  const res = await fetchWithTimeout(`${urlBase}/cart`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      product_id,
+      quantity,
+    }),
+  })
 
-    const res = await fetch(`${urlBase}/cart`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-            product_id,
-            quantity
-        }),
-    })
-
-    if(!res.ok){
-        throw new Error("Erro ao adicionar produto no carrinho")
-    }
-
+  if (!res.ok) {
+    throw createHttpApiError(res.status, 'CreateCart')
+  }
 }

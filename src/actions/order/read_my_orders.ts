@@ -1,59 +1,53 @@
-import ApiUrlBase from '../api';
-import { PaginatedOrdersResponse, OrderApiEnvelope } from '@/src/types/order';
+import ApiUrlBase from '../api'
+import { createHttpApiError, fetchWithTimeout } from '@/src/lib/api-error'
+import { PaginatedOrdersResponse, OrderApiEnvelope } from '@/src/types/order'
 
 export interface ReadMyOrdersParams {
-    page?: number;
-    limit?: number;
-    status?: string;
+  page?: number
+  limit?: number
+  status?: string
 }
 
 export default async function ReadMyOrdersService({
-    page = 1,
-    limit = 10,
-    status = '',
+  page = 1,
+  limit = 10,
+  status = '',
 }: ReadMyOrdersParams = {}): Promise<PaginatedOrdersResponse> {
-    const baseUrl = ApiUrlBase();
+  const baseUrl = ApiUrlBase()
 
-    const params = new URLSearchParams({
-        page: String(page),
-        limit: String(limit),
-    });
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+  })
 
-    if (status) {
-        params.append('status', status.toUpperCase());
-    }
+  if (status) {
+    params.append('status', status.toUpperCase())
+  }
 
-    const res = await fetch(`${baseUrl}/orders/me?${params.toString()}`, {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    });
+  const res = await fetchWithTimeout(`${baseUrl}/orders/me?${params.toString()}`, {
+    method: 'GET',
+    credentials: 'include',
+  })
 
-    if (res.status === 401) {
-        throw new Error('401');
-    }
+  if (!res.ok) {
+    throw createHttpApiError(res.status, 'ReadMyOrdersService')
+  }
 
-    if (!res.ok) {
-        throw new Error('Erro ao listar pedidos.');
-    }
+  const json = (await res.json()) as OrderApiEnvelope<PaginatedOrdersResponse>
+  const body = json['Body:'] ?? json.Body
 
-    const json = (await res.json()) as OrderApiEnvelope<PaginatedOrdersResponse>;
-    const body = json['Body:'] ?? json.Body;
-
-    if (!body) {
-        return {
-            data: [],
-            page,
-            limit,
-            total_rows: 0,
-            total_pages: 0,
-        };
-    }
-
+  if (!body) {
     return {
-        ...body,
-        data: body.data ?? [],
-    };
+      data: [],
+      page,
+      limit,
+      total_rows: 0,
+      total_pages: 0,
+    }
+  }
+
+  return {
+    ...body,
+    data: body.data ?? [],
+  }
 }

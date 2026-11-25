@@ -1,20 +1,32 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useSyncExternalStore } from "react";
 import {
   guestCartService,
   GuestCartData,
   GUEST_CART_STORAGE_KEY,
   GUEST_CART_EVENT,
-} from "./guest-cart";
+} from "@/src/services/guest-cart";
 import { CartResponse } from "@/src/actions/cart/read_all";
 
+const EMPTY_CART: GuestCartData = {
+  items: [],
+  updatedAt: 0,
+};
+
+function subscribeNoop(): () => void {
+  return () => {};
+}
+
 export function useGuestCart() {
-  const [cartData, setCartData] = useState<GuestCartData>({
-    items: [],
-    updatedAt: Date.now(),
-  });
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(
+    subscribeNoop,
+    () => true,
+    () => false
+  );
+  const [cartData, setCartData] = useState<GuestCartData>(() =>
+    typeof window === "undefined" ? EMPTY_CART : guestCartService.getRawCart()
+  );
 
   const reloadCart = useCallback(() => {
     const raw = guestCartService.getRawCart();
@@ -22,9 +34,6 @@ export function useGuestCart() {
   }, []);
 
   useEffect(() => {
-    setMounted(true);
-    reloadCart();
-
     // 1. Escuta mudanças em outras abas
     function handleStorageChange(event: StorageEvent) {
       if (event.key === GUEST_CART_STORAGE_KEY) {
@@ -67,11 +76,12 @@ export function useGuestCart() {
     };
   }, [reloadCart]);
 
-  const cartResponse: CartResponse = guestCartService.toCartResponse(cartData);
-  const totalItems = cartData.items.reduce((acc, item) => acc + (item.quantity || 1), 0);
+  const effectiveCartData = mounted ? cartData : EMPTY_CART;
+  const cartResponse: CartResponse = guestCartService.toCartResponse(effectiveCartData);
+  const totalItems = effectiveCartData.items.reduce((acc, item) => acc + (item.quantity || 1), 0);
 
   return {
-    cartData,
+    cartData: effectiveCartData,
     cartResponse,
     totalItems,
     mounted,

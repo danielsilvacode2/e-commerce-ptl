@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test src/lib/__tests__/search.test.ts src/lib/__tests__/product-rules.test.ts"
+    "test": "node --test src/lib/__tests__/search.test.ts src/lib/__tests__/product-rules.test.ts src/lib/__tests__/api-error.test.ts"
   },
   "dependencies": {
     "lucide-react": "^1.61.0",

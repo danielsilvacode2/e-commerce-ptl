@@ -10,7 +10,6 @@ import {
     Truck,
     CheckCircle2,
     XCircle,
-    AlertCircle,
     Loader2,
     RefreshCw,
     MapPin,
@@ -25,6 +24,11 @@ import ReadOrderByIdService from '@/src/actions/order/read_order_by_id'
 import ReadOrderHistoryService from '@/src/actions/order/read_order_history'
 import CancelOrderService from '@/src/actions/order/cancel_order'
 import RequestRefundService from '@/src/actions/order/request_refund'
+import { classifyErrorVariant, ErrorStateVariant, logClientError } from '@/src/lib/api-error'
+import { clientCache } from '@/src/lib/client-cache'
+import ErrorState from '@/src/components/ui/error-state'
+import StaleDataBanner from '@/src/components/ui/stale-data-banner'
+import { OrderDetailSkeleton } from '@/src/components/ui/skeletons'
 import {
     getStatusConfig,
     isFinalStatus,
@@ -81,7 +85,9 @@ export default function OrderDetailClient({ orderId }: OrderDetailClientProps) {
     const [history, setHistory] = useState<OrderStatusHistoryResponse[]>([])
     const [loading, setLoading] = useState(true)
     const [refreshing, setRefreshing] = useState(false)
-    const [error, setError] = useState('')
+    const [errorVariant, setErrorVariant] = useState<ErrorStateVariant | null>(null)
+    const [isStale, setIsStale] = useState(false)
+    const [cachedAt, setCachedAt] = useState<number | null>(null)
 
     // Cancelamento (PENDING_PAYMENT)
     const [cancelModalOpen, setCancelModalOpen] = useState(false)
@@ -96,15 +102,19 @@ export default function OrderDetailClient({ orderId }: OrderDetailClientProps) {
     const [refundSuccess, setRefundSuccess] = useState('')
 
     const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+    const inFlightRef = useRef<boolean>(false)
 
     const fetchOrderData = useCallback(
         async (isPolling = false) => {
+            if (isPolling && inFlightRef.current) return
+            inFlightRef.current = true
+            const cacheKey = `order:${orderId}`
             if (!isPolling) {
                 setLoading(true)
             } else {
                 setRefreshing(true)
             }
-            setError('')
+            setErrorVariant(null)
 
             try {
                 const [orderData, historyData] = await Promise.all([
@@ -112,17 +122,33 @@ export default function OrderDetailClient({ orderId }: OrderDetailClientProps) {
                     ReadOrderHistoryService(orderId).catch(() => []),
                 ])
 
+                clientCache.set(cacheKey, { order: orderData, history: historyData })
                 setOrder(orderData)
                 setHistory(historyData)
+                setIsStale(false)
+                setCachedAt(null)
             } catch (err: unknown) {
                 if (err instanceof Error && err.message === '401') {
                     router.push('/login')
                     return
                 }
+                logClientError('OrderDetailClient', err, { orderId, isPolling })
                 if (!isPolling) {
-                    setError(err instanceof Error ? err.message : 'Erro ao carregar pedido.')
+                    const cached = clientCache.get<{
+                        order: OrderResponse
+                        history: OrderStatusHistoryResponse[]
+                    }>(cacheKey)
+                    if (cached) {
+                        setOrder(cached.data.order)
+                        setHistory(cached.data.history)
+                        setIsStale(true)
+                        setCachedAt(cached.savedAt)
+                    } else {
+                        setErrorVariant(classifyErrorVariant(err))
+                    }
                 }
             } finally {
+                inFlightRef.current = false
                 setLoading(false)
                 setRefreshing(false)
             }
@@ -132,6 +158,23 @@ export default function OrderDetailClient({ orderId }: OrderDetailClientProps) {
 
     useEffect(() => {
         let active = true
+        const cacheKey = `order:${orderId}`
+
+        // Stale-While-Revalidate: exibe cache recente de imediato ao revisitar o pedido
+        const freshCached = clientCache.get<{
+            order: OrderResponse
+            history: OrderStatusHistoryResponse[]
+        }>(cacheKey, 60 * 1000)
+        if (freshCached) {
+            queueMicrotask(() => {
+                if (!active) return
+                setOrder(freshCached.data.order)
+                setHistory(freshCached.data.history)
+                setIsStale(false)
+                setCachedAt(freshCached.savedAt)
+                setLoading(false)
+            })
+        }
 
         Promise.all([
             ReadOrderByIdService(orderId),
@@ -139,8 +182,11 @@ export default function OrderDetailClient({ orderId }: OrderDetailClientProps) {
         ])
             .then(([orderData, historyData]) => {
                 if (!active) return
+                clientCache.set(cacheKey, { order: orderData, history: historyData })
                 setOrder(orderData)
                 setHistory(historyData)
+                setIsStale(false)
+                setCachedAt(null)
             })
             .catch((err: unknown) => {
                 if (!active) return
@@ -148,7 +194,19 @@ export default function OrderDetailClient({ orderId }: OrderDetailClientProps) {
                     router.push('/login')
                     return
                 }
-                setError(err instanceof Error ? err.message : 'Erro ao carregar pedido.')
+                logClientError('OrderDetailClient:init', err, { orderId })
+                const cached = clientCache.get<{
+                    order: OrderResponse
+                    history: OrderStatusHistoryResponse[]
+                }>(cacheKey)
+                if (cached) {
+                    setOrder(cached.data.order)
+                    setHistory(cached.data.history)
+                    setIsStale(true)
+                    setCachedAt(cached.savedAt)
+                } else {
+                    setErrorVariant(classifyErrorVariant(err))
+                }
             })
             .finally(() => {
                 if (active) setLoading(false)
@@ -159,20 +217,33 @@ export default function OrderDetailClient({ orderId }: OrderDetailClientProps) {
         }
     }, [orderId, router])
 
+    const orderStatus = order?.status
+
     useEffect(() => {
-        if (!order || isFinalStatus(order.status)) {
+        if (!orderStatus || isFinalStatus(orderStatus)) {
             if (pollingRef.current) clearInterval(pollingRef.current)
             return
         }
 
-        pollingRef.current = setInterval(() => {
-            fetchOrderData(true)
-        }, 7000)
+        const tick = () => {
+            if (typeof document !== 'undefined' && document.hidden) return
+            void fetchOrderData(true)
+        }
+
+        pollingRef.current = setInterval(tick, 10000)
+
+        const handleVisibilityChange = () => {
+            if (typeof document !== 'undefined' && !document.hidden) {
+                void fetchOrderData(true)
+            }
+        }
+        document.addEventListener('visibilitychange', handleVisibilityChange)
 
         return () => {
             if (pollingRef.current) clearInterval(pollingRef.current)
+            document.removeEventListener('visibilitychange', handleVisibilityChange)
         }
-    }, [order, fetchOrderData])
+    }, [orderStatus, fetchOrderData])
 
     async function handleConfirmCancel() {
         setCanceling(true)
@@ -220,43 +291,29 @@ export default function OrderDetailClient({ orderId }: OrderDetailClientProps) {
     }
 
     if (loading) {
-        return (
-            <main className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-20 flex flex-col items-center justify-center font-sans text-black dark:text-white">
-                <Loader2 size={36} className="animate-spin" />
-                <p className="mt-4 text-xs font-semibold uppercase tracking-wider text-neutral-500">
-                    Carregando detalhes do pedido...
-                </p>
-            </main>
-        )
+        return <OrderDetailSkeleton />
     }
 
-    if (error || !order) {
+    if (errorVariant || !order) {
         return (
-            <main className="mx-auto max-w-4xl px-4 py-16 font-sans text-black dark:text-white">
-                <div className="rounded-3xl bg-[#F2F0F1] dark:bg-[#181818] p-8 sm:p-12 text-center">
-                    <AlertCircle size={36} className="mx-auto mb-3" />
-                    <h1 className="font-display text-2xl font-bold uppercase tracking-tight">
-                        Não foi possível carregar o pedido
-                    </h1>
-                    <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-                        {error || 'Não encontramos as informações deste pedido.'}
-                    </p>
-                    <div className="mt-6 flex justify-center gap-3">
-                        <Link
-                            href="/pedidos"
-                            className="rounded-full border border-black/15 dark:border-white/20 px-6 py-3 text-xs font-semibold uppercase tracking-wider hover:bg-white dark:hover:bg-[#252525]"
-                        >
-                            Ver Meus Pedidos
-                        </Link>
-                        <button
-                            type="button"
-                            onClick={() => fetchOrderData(false)}
-                            className="rounded-full bg-black text-white dark:bg-white dark:text-black px-6 py-3 text-xs font-semibold uppercase tracking-wider hover:bg-neutral-800 dark:hover:bg-neutral-200 cursor-pointer"
-                        >
-                            Tentar Novamente
-                        </button>
-                    </div>
-                </div>
+            <main className="mx-auto max-w-2xl px-4 py-16 font-sans text-black dark:text-white">
+                <ErrorState
+                    variant={errorVariant ?? 'not-found'}
+                    title={
+                        errorVariant === 'not-found' || !order
+                            ? 'Pedido não encontrado'
+                            : undefined
+                    }
+                    description={
+                        errorVariant === 'not-found' || !order
+                            ? 'Não encontramos as informações deste pedido. Verifique sua lista de compras.'
+                            : undefined
+                    }
+                    onRetry={() => fetchOrderData(false)}
+                    autoFocusRetry
+                    secondaryHref="/pedidos"
+                    secondaryLabel="Ver Meus Pedidos"
+                />
             </main>
         )
     }
@@ -289,6 +346,15 @@ export default function OrderDetailClient({ orderId }: OrderDetailClientProps) {
                     )}
                 </div>
             </div>
+
+            {isStale && (
+                <StaleDataBanner
+                    savedAt={cachedAt}
+                    onRetry={() => fetchOrderData(false)}
+                    retrying={refreshing}
+                    className="mb-6"
+                />
+            )}
 
             {refundSuccess && (
                 <div className="mb-6 flex items-center gap-2 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 p-4 text-xs font-medium text-emerald-700 dark:text-emerald-300">

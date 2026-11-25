@@ -1,26 +1,25 @@
-import ApiUrlBase from "../api"
-
-
+import ApiUrlBase from '../api'
+import { createHttpApiError, fetchWithTimeout } from '@/src/lib/api-error'
 
 export type UserResponse = {
-    Id: string,
-    name: string,
-    email: string,
-    role: string,
-    update_at: string,
-    created_at: string
+  Id: string
+  name: string
+  email: string
+  role: string
+  update_at: string
+  created_at: string
 }
+
 export default async function ReadMe(): Promise<UserResponse | null> {
+  const baseUrl = ApiUrlBase()
+  const res = await fetchWithTimeout(`${baseUrl}/users/me`, {
+    method: 'GET',
+    credentials: 'include',
+  })
 
-    const baseUrl = ApiUrlBase()  
-    const res = await fetch(`${baseUrl}/users/me`, {
-        method: "GET",
-        credentials: "include",
-    })
-   
-    if (res.status === 401) return null
-    if (!res.ok) throw new Error(`Erro ${res.status} em ${res.url}`)
+  if (res.status === 401) return null
+  if (!res.ok) throw createHttpApiError(res.status, 'ReadMe')
 
-    const data = await res.json()
-    return data["Body:"] as UserResponse
+  const data = await res.json()
+  return (data['Body:'] ?? data.Body) as UserResponse
 }

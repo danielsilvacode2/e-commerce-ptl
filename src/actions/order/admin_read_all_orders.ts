@@ -6,6 +6,7 @@ export interface AdminReadAllOrdersParams {
     limit?: number;
     status?: string;
     userId?: string;
+    signal?: AbortSignal;
 }
 
 export default async function AdminReadAllOrdersService({
@@ -13,6 +14,7 @@ export default async function AdminReadAllOrdersService({
     limit = 10,
     status = '',
     userId = '',
+    signal,
 }: AdminReadAllOrdersParams = {}): Promise<PaginatedOrdersResponse> {
     const baseUrl = ApiUrlBase();
 
@@ -32,9 +34,7 @@ export default async function AdminReadAllOrdersService({
     const res = await fetch(`${baseUrl}/orders?${params.toString()}`, {
         method: 'GET',
         credentials: 'include',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        signal,
     });
 
     if (res.status === 401 || res.status === 403) {

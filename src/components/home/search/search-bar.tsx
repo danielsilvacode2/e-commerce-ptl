@@ -3,9 +3,11 @@
 import { FormEvent, useEffect, useId, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Loader2, Search } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { useProductSearch } from '@/src/hooks/useProductSearch'
 import { SEARCH_MAX_LENGTH, SEARCH_MIN_LENGTH, isSearchTermValid, normalizeSearchTerm } from '@/src/lib/search'
+import { formatCurrencyBRL } from '@/src/lib/product-rules'
+import { SearchSuggestionsSkeleton } from '@/src/components/ui/skeletons'
 
 interface SearchBarProps {
   inputId?: string
@@ -14,7 +16,7 @@ interface SearchBarProps {
   iconClassName: string
 }
 
-// Barra de busca do header: sugestoes com debounce e redirecionamento para /busca
+// Barra de busca do header: sugestões com debounce, skeleton e redirecionamento para /busca
 export default function SearchBar({ inputId, placeholder, inputClassName, iconClassName }: SearchBarProps) {
   const [term, setTerm] = useState('')
   const [open, setOpen] = useState(false)
@@ -22,7 +24,7 @@ export default function SearchBar({ inputId, placeholder, inputClassName, iconCl
   const listId = useId()
   const router = useRouter()
 
-  const { status, products, retry } = useProductSearch(term, 5)
+  const { status, products, errorVariant, isStale, retry } = useProductSearch(term, 5)
   const showPanel = open && isSearchTermValid(term)
 
   useEffect(() => {
@@ -47,7 +49,7 @@ export default function SearchBar({ inputId, placeholder, inputClassName, iconCl
     <div ref={containerRef} className="relative w-full">
       <form role="search" onSubmit={handleSubmit}>
         <span className={iconClassName}>
-          <Search className="h-4 w-4" />
+          <Search className="h-4 w-4" aria-hidden="true" />
         </span>
         <input
           id={inputId}
@@ -75,19 +77,22 @@ export default function SearchBar({ inputId, placeholder, inputClassName, iconCl
           aria-live="polite"
           className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#181818] shadow-xl"
         >
-          {status === 'loading' && (
-            <p className="flex items-center gap-2 px-4 py-3 text-xs text-neutral-500">
-              <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" /> Buscando...
-            </p>
-          )}
+          {status === 'loading' && <SearchSuggestionsSkeleton count={3} />}
 
           {status === 'error' && (
-            <div className="flex items-center justify-between gap-2 px-4 py-3 text-xs text-neutral-700 dark:text-neutral-300">
-              <span>Erro ao buscar produtos.</span>
+            <div
+              role="alert"
+              className="flex items-center justify-between gap-2 px-4 py-3 text-xs text-neutral-700 dark:text-neutral-300"
+            >
+              <span>
+                {errorVariant === 'offline'
+                  ? 'Sem conexão com a internet.'
+                  : 'Não conseguimos buscar agora.'}
+              </span>
               <button
                 type="button"
                 onClick={retry}
-                className="rounded-full border border-black/15 dark:border-white/15 px-3 py-1 font-semibold uppercase hover:bg-[#F2F0F1] dark:hover:bg-[#252525] focus-visible:outline-2 active:opacity-70"
+                className="shrink-0 rounded-full border border-black/15 dark:border-white/15 px-3 py-1 font-semibold uppercase hover:bg-[#F2F0F1] dark:hover:bg-[#252525] focus-visible:outline-2 active:opacity-70 cursor-pointer"
               >
                 Tentar novamente
               </button>
@@ -100,6 +105,11 @@ export default function SearchBar({ inputId, placeholder, inputClassName, iconCl
 
           {status === 'success' && products.length > 0 && (
             <>
+              {isStale && (
+                <div className="border-b border-black/10 dark:border-white/10 bg-[#F2F0F1] dark:bg-[#222222] px-4 py-2 text-[11px] text-neutral-600 dark:text-neutral-300">
+                  Algumas informações podem estar desatualizadas.
+                </div>
+              )}
               <ul>
                 {products.map((product) => (
                   <li key={product.id}>
@@ -109,7 +119,9 @@ export default function SearchBar({ inputId, placeholder, inputClassName, iconCl
                       className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm text-black dark:text-white hover:bg-[#F2F0F1] dark:hover:bg-[#252525] focus-visible:bg-[#F2F0F1] dark:focus-visible:bg-[#252525] outline-none"
                     >
                       <span className="truncate">{product.name}</span>
-                      <span className="shrink-0 text-xs text-neutral-500">R$ {product.price}</span>
+                      <span className="shrink-0 text-xs font-medium text-neutral-500 dark:text-neutral-400">
+                        {formatCurrencyBRL(product.price)}
+                      </span>
                     </Link>
                   </li>
                 ))}
@@ -117,7 +129,7 @@ export default function SearchBar({ inputId, placeholder, inputClassName, iconCl
               <button
                 type="button"
                 onClick={goToResults}
-                className="w-full border-t border-black/10 dark:border-white/10 px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-black dark:text-white hover:bg-[#F2F0F1] dark:hover:bg-[#252525] focus-visible:bg-[#F2F0F1] active:opacity-70"
+                className="w-full border-t border-black/10 dark:border-white/10 px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-black dark:text-white hover:bg-[#F2F0F1] dark:hover:bg-[#252525] focus-visible:bg-[#F2F0F1] active:opacity-70 cursor-pointer"
               >
                 Ver todos os resultados
               </button>
