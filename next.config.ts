@@ -22,6 +22,23 @@ const nextConfig: NextConfig = {
       },
     },
   },
+  async rewrites() {
+    const rawApiUrl = process.env.API_INTERNAL_URL?.trim().replace(/\/+$/, "");
+    if (!rawApiUrl) {
+      return [];
+    }
+
+    const destinationBase = rawApiUrl.endsWith("/api/v1")
+      ? rawApiUrl
+      : `${rawApiUrl}/api/v1`;
+
+    return [
+      {
+        source: "/api/v1/:path*",
+        destination: `${destinationBase}/:path*`,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

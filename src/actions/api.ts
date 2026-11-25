@@ -1,10 +1,25 @@
+function normalizeBaseUrl(rawUrl: string): string {
+  return rawUrl.trim().replace(/\/+$/, '')
+}
+
+function normalizeInternalUrl(rawUrl: string): string {
+  const cleaned = normalizeBaseUrl(rawUrl)
+  return cleaned.endsWith('/api/v1') ? cleaned : `${cleaned}/api/v1`
+}
+
 export default function ApiUrlBase(): string {
   if (typeof window === 'undefined') {
-    return (
-      process.env.API_INTERNAL_URL ||
-      process.env.NEXT_PUBLIC_API_URL ||
-      'http://localhost:5000/api/v1'
-    )
+    if (process.env.API_INTERNAL_URL?.trim()) {
+      return normalizeInternalUrl(process.env.API_INTERNAL_URL)
+    }
+    if (process.env.NEXT_PUBLIC_API_URL?.trim()) {
+      return normalizeBaseUrl(process.env.NEXT_PUBLIC_API_URL)
+    }
+    return 'http://localhost:5000/api/v1'
   }
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'
+
+  if (process.env.NEXT_PUBLIC_API_URL?.trim()) {
+    return normalizeBaseUrl(process.env.NEXT_PUBLIC_API_URL)
+  }
+  return 'http://localhost:5000/api/v1'
 }
