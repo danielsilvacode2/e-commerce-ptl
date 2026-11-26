@@ -22,23 +22,6 @@ const nextConfig: NextConfig = {
       },
     },
   },
-  async rewrites() {
-    const rawApiUrl = (
-      process.env.API_INTERNAL_URL?.trim() ||
-      "https://e-commerce-api-d5lu.onrender.com"
-    ).replace(/\/+$/, "");
-
-    const destinationBase = rawApiUrl.endsWith("/api/v1")
-      ? rawApiUrl
-      : `${rawApiUrl}/api/v1`;
-
-    return [
-      {
-        source: "/api/v1/:path*",
-        destination: `${destinationBase}/:path*`,
-      },
-    ];
-  },
 };
 
 export default nextConfig;

@@ -6,6 +6,13 @@ function normalizeBaseUrl(rawUrl: string): string {
 
 function normalizeInternalUrl(rawUrl: string): string {
   const cleaned = normalizeBaseUrl(rawUrl)
+  if (isAbsoluteHttpUrl(cleaned)) {
+    try {
+      return `${new URL(cleaned).origin}/api/v1`
+    } catch {
+      // Fallback para normalização por sufixo
+    }
+  }
   return cleaned.endsWith('/api/v1') ? cleaned : `${cleaned}/api/v1`
 }
 
