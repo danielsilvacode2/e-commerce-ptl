@@ -1,5 +1,9 @@
 import ApiUrlBase from '../api'
-import { createHttpApiError, fetchWithTimeout } from '@/src/lib/api-error'
+import {
+  CART_MUTATION_TIMEOUT_MS,
+  createHttpApiError,
+  fetchWithTimeout,
+} from '@/src/lib/api-error'
 
 interface CartRequest {
   product_id: string
@@ -9,17 +13,21 @@ interface CartRequest {
 export default async function CreateCart({ product_id, quantity }: CartRequest) {
   const urlBase = ApiUrlBase()
 
-  const res = await fetchWithTimeout(`${urlBase}/cart`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
+  const res = await fetchWithTimeout(
+    `${urlBase}/cart`,
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        product_id,
+        quantity,
+      }),
     },
-    body: JSON.stringify({
-      product_id,
-      quantity,
-    }),
-  })
+    CART_MUTATION_TIMEOUT_MS
+  )
 
   if (!res.ok) {
     throw createHttpApiError(res.status, 'CreateCart')

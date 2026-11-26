@@ -1,5 +1,9 @@
 import ApiUrlBase from '../api'
-import { createHttpApiError, fetchWithTimeout } from '@/src/lib/api-error'
+import {
+  SESSION_FETCH_TIMEOUT_MS,
+  createHttpApiError,
+  fetchWithTimeout,
+} from '@/src/lib/api-error'
 
 export type UserResponse = {
   Id: string
@@ -12,10 +16,14 @@ export type UserResponse = {
 
 export default async function ReadMe(): Promise<UserResponse | null> {
   const baseUrl = ApiUrlBase()
-  const res = await fetchWithTimeout(`${baseUrl}/users/me`, {
-    method: 'GET',
-    credentials: 'include',
-  })
+  const res = await fetchWithTimeout(
+    `${baseUrl}/users/me`,
+    {
+      method: 'GET',
+      credentials: 'include',
+    },
+    SESSION_FETCH_TIMEOUT_MS
+  )
 
   if (res.status === 401) return null
   if (!res.ok) throw createHttpApiError(res.status, 'ReadMe')

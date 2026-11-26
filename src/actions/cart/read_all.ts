@@ -1,5 +1,9 @@
 import ApiUrlBase from '../api'
-import { createHttpApiError, fetchWithTimeout } from '@/src/lib/api-error'
+import {
+  SESSION_FETCH_TIMEOUT_MS,
+  createHttpApiError,
+  fetchWithTimeout,
+} from '@/src/lib/api-error'
 
 export interface ProductCartResponse {
   id: string
@@ -39,10 +43,14 @@ interface CartApiEnvelope {
 export default async function ReadCart(): Promise<CartResponse> {
   const urlBase = ApiUrlBase()
 
-  const res = await fetchWithTimeout(`${urlBase}/cart`, {
-    method: 'GET',
-    credentials: 'include',
-  })
+  const res = await fetchWithTimeout(
+    `${urlBase}/cart`,
+    {
+      method: 'GET',
+      credentials: 'include',
+    },
+    SESSION_FETCH_TIMEOUT_MS
+  )
 
   if (!res.ok) {
     throw createHttpApiError(res.status, 'ReadCart')

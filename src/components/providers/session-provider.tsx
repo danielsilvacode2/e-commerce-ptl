@@ -60,6 +60,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [badgePulseKey, setBadgePulseKey] = useState(0)
 
   const userRef = useRef<UserResponse | null>(null)
+  const cartIsStaleRef = useRef<boolean>(false)
   const authInFlightRef = useRef<Promise<UserResponse | null> | null>(null)
   const cartInFlightRef = useRef<Promise<void> | null>(null)
   const cartInFlightVersionRef = useRef<number>(-1)
@@ -184,16 +185,19 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         const cachedUserCart = clientCache.get<CartResponse>(CART_CACHE_KEY)
         const guestCart = guestCartService.toCartResponse()
         if (cachedUserCart && cachedUserCart.data.list.length > 0) {
+          cartIsStaleRef.current = true
           setCartState(cachedUserCart.data)
           setCartIsStale(true)
           setCartCachedAt(cachedUserCart.savedAt)
           setCartErrorVariant(null)
         } else if (guestCart.list.length > 0) {
+          cartIsStaleRef.current = false
           setCartState(guestCart)
           setCartIsStale(false)
           setCartCachedAt(null)
           setCartErrorVariant(null)
         } else {
+          cartIsStaleRef.current = false
           setCartState(null)
           setCartErrorVariant(classifyErrorVariant(err))
         }
@@ -234,17 +238,21 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     void refreshSession()
   }, [refreshSession])
 
+  useEffect(() => {
+    cartIsStaleRef.current = cartIsStale
+  }, [cartIsStale])
+
   // Sincronização do carrinho de visitante entre abas/eventos
   useEffect(() => {
     function handleGuestCartUpdate() {
-      if (!userRef.current) {
+      if (!userRef.current && !cartIsStaleRef.current) {
         setCartState(guestCartService.toCartResponse())
         setOptimisticTotal(null)
       }
     }
 
     function handleStorage(e: StorageEvent) {
-      if (e.key === GUEST_CART_STORAGE_KEY && !userRef.current) {
+      if (e.key === GUEST_CART_STORAGE_KEY && !userRef.current && !cartIsStaleRef.current) {
         handleGuestCartUpdate()
       }
     }

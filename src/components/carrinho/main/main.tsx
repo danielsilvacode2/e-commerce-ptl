@@ -58,6 +58,7 @@ interface MainCartProps {
   onRetry?: () => void
   onSyncCart?: () => void
   isGuest?: boolean
+  sessionUnavailable?: boolean
 }
 
 export default function MainCart({
@@ -70,6 +71,7 @@ export default function MainCart({
   onRetry,
   onSyncCart,
   isGuest = false,
+  sessionUnavailable = false,
 }: MainCartProps) {
   const router = useRouter()
   const { isAuthenticated } = useSession()
@@ -79,11 +81,21 @@ export default function MainCart({
   const subtotal = selectedItems.reduce((acc, i) => acc + Number(i.price) * i.quantity, 0)
   const total = subtotal
 
-  const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set())
   const [maxedIds, setMaxedIds] = useState<Set<string>>(new Set())
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set())
   const [actionError, setActionError] = useState<string>('')
+
+  const itemsRef = useRef<ProductCartResponse[]>(items)
+  const isGuestRef = useRef<boolean>(isGuest)
+  const onSyncCartRef = useRef<(() => void) | undefined>(onSyncCart)
   const timersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
+  const pendingRemovalsRef = useRef<Map<string, { item: ProductCartResponse; index: number }>>(new Map())
+  // Fila serializada por item para evitar perda de toques rápidos no mobile e race conditions entre +, - e remover
+  const itemQueuesRef = useRef<Map<string, Promise<void>>>(new Map())
+  const itemInFlightCountRef = useRef<Map<string, number>>(new Map())
+  const activeMutationsRef = useRef<number>(0)
+  const pendingSyncRef = useRef<boolean>(false)
 
   // Estado do checkout / CEP
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false)
@@ -93,10 +105,34 @@ export default function MainCart({
   const autoCheckoutHandledRef = useRef(false)
 
   useEffect(() => {
+    itemsRef.current = items
+  }, [items])
+
+  useEffect(() => {
+    isGuestRef.current = isGuest
+  }, [isGuest])
+
+  useEffect(() => {
+    onSyncCartRef.current = onSyncCart
+  }, [onSyncCart])
+
+  useEffect(() => {
     const timers = timersRef.current
+    const pendingRemovals = pendingRemovalsRef.current
     return () => {
-      timers.forEach((t) => clearTimeout(t))
+      // Se o usuário saiu da tela antes dos 2,5s do "Desfazer", confirma a remoção pendente em vez de descartá-la
+      timers.forEach((timer, id) => {
+        clearTimeout(timer)
+        const pending = pendingRemovals.get(id)
+        if (!pending) return
+        if (isGuestRef.current) {
+          guestCartService.removeItem(pending.item.product_id)
+        } else {
+          void RemoveProductCart(id, { keepalive: true }).catch(() => {})
+        }
+      })
       timers.clear()
+      pendingRemovals.clear()
     }
   }, [])
 
@@ -131,13 +167,111 @@ export default function MainCart({
     })
   }
 
+  function flushSyncIfIdle() {
+    if (activeMutationsRef.current === 0 && timersRef.current.size === 0 && pendingSyncRef.current) {
+      pendingSyncRef.current = false
+      onSyncCartRef.current?.()
+    }
+  }
+
+  function scheduleSyncCart() {
+    pendingSyncRef.current = true
+    flushSyncIfIdle()
+  }
+
+  function beginItemMutation(id: string) {
+    activeMutationsRef.current += 1
+    const nextCount = (itemInFlightCountRef.current.get(id) ?? 0) + 1
+    itemInFlightCountRef.current.set(id, nextCount)
+    if (nextCount === 1) {
+      setUpdatingIds((prev) => {
+        const next = new Set(prev)
+        next.add(id)
+        return next
+      })
+    }
+  }
+
+  function endItemMutation(id: string) {
+    const nextCount = Math.max(0, (itemInFlightCountRef.current.get(id) ?? 1) - 1)
+    if (nextCount === 0) {
+      itemInFlightCountRef.current.delete(id)
+      setUpdatingIds((prev) => {
+        if (!prev.has(id)) return prev
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+    } else {
+      itemInFlightCountRef.current.set(id, nextCount)
+    }
+
+    activeMutationsRef.current = Math.max(0, activeMutationsRef.current - 1)
+    flushSyncIfIdle()
+  }
+
+  function enqueueItemOp(id: string, task: () => Promise<void>) {
+    beginItemMutation(id)
+    const previous = itemQueuesRef.current.get(id) ?? Promise.resolve()
+    const nextJob = previous
+      .catch(() => {})
+      .then(task)
+      .finally(() => {
+        if (itemQueuesRef.current.get(id) === nextJob) {
+          itemQueuesRef.current.delete(id)
+        }
+        endItemMutation(id)
+      })
+    itemQueuesRef.current.set(id, nextJob)
+  }
+
   function updateList(fn: (prev: ProductCartResponse[]) => ProductCartResponse[]) {
-    setList((prev) => (prev ? { ...prev, list: fn(prev.list) } : prev))
+    setList((prev) => {
+      if (!prev) return prev
+      const nextList = fn(prev.list)
+      itemsRef.current = nextList
+      return { ...prev, list: nextList }
+    })
+  }
+
+  function guardSessionAvailable(): boolean {
+    if (!sessionUnavailable) return true
+    setActionError('Sua conexão com a sessão está sendo restabelecida. Aguarde um instante e tente novamente.')
+    onRetry?.()
+    return false
+  }
+
+  function getMutationErrorMessage(err: unknown, fallback: string, syncMessage?: string): { message: string; shouldSync: boolean } {
+    if (err instanceof ApiError) {
+      if (err.status === 401) {
+        return { message: 'Sua sessão expirou. Faça login novamente.', shouldSync: false }
+      }
+      if (err.status === 403) {
+        return {
+          message: 'Não foi possível validar sua solicitação. Recarregue a página e tente novamente.',
+          shouldSync: false,
+        }
+      }
+      if (err.status === 404 || err.status === 422) {
+        return {
+          message: syncMessage ?? 'Seu carrinho foi atualizado com o servidor. Tente novamente.',
+          shouldSync: true,
+        }
+      }
+      if (err.kind === 'timeout' || err.kind === 'offline') {
+        return {
+          message: 'A conexão demorou para responder. Verifique sua internet e tente novamente.',
+          shouldSync: true,
+        }
+      }
+    }
+    return { message: fallback, shouldSync: false }
   }
 
   async function handleToggleAll() {
+    if (!guardSessionAvailable()) return
     const next = !allSelected
-    const previous = items
+    const previous = itemsRef.current
     setActionError('')
 
     updateList((prev) => prev.map((i) => ({ ...i, isSelect: next })))
@@ -152,203 +286,263 @@ export default function MainCart({
     } catch (err: unknown) {
       logClientError('MainCart:handleToggleAll', err)
       updateList(() => previous)
-      if (err instanceof ApiError && err.status === 401) {
-        setActionError('Sua sessão expirou. Faça login novamente.')
-      } else {
-        setActionError('Não foi possível atualizar a seleção dos itens. Tente novamente.')
-      }
+      const { message, shouldSync } = getMutationErrorMessage(
+        err,
+        'Não foi possível atualizar a seleção dos itens. Tente novamente.'
+      )
+      if (shouldSync) scheduleSyncCart()
+      setActionError(message)
     }
   }
 
   async function handleToggleOne(item: ProductCartResponse) {
-    const next = !item.isSelect
+    if (!guardSessionAvailable()) return
+    const current = itemsRef.current.find((i) => i.id === item.id) ?? item
+    const next = !current.isSelect
     setActionError('')
     updateList((prev) =>
-      prev.map((i) => (i.id === item.id ? { ...i, isSelect: next } : i))
+      prev.map((i) => (i.id === current.id ? { ...i, isSelect: next } : i))
     )
 
     if (isGuest) {
-      guestCartService.toggleSelect(item.product_id, next)
+      guestCartService.toggleSelect(current.product_id, next)
       return
     }
 
     try {
-      await UpdateIsSelectCart({ id: item.id, select: next })
+      await UpdateIsSelectCart({ id: current.id, select: next })
     } catch (err: unknown) {
-      logClientError('MainCart:handleToggleOne', err, { itemId: item.id })
+      logClientError('MainCart:handleToggleOne', err, { itemId: current.id })
       updateList((prev) =>
-        prev.map((i) => (i.id === item.id ? { ...i, isSelect: item.isSelect } : i))
+        prev.map((i) => (i.id === current.id ? { ...i, isSelect: current.isSelect } : i))
       )
-      if (err instanceof ApiError && err.status === 401) {
-        setActionError('Sua sessão expirou. Faça login novamente.')
-      } else if (err instanceof ApiError && err.status === 404) {
-        onSyncCart?.()
-        setActionError('Seu carrinho foi atualizado. Tente selecionar o item novamente.')
-      } else {
-        setActionError('Não foi possível atualizar a seleção do item. Tente novamente.')
-      }
+      const { message, shouldSync } = getMutationErrorMessage(
+        err,
+        'Não foi possível atualizar a seleção do item. Tente novamente.',
+        'Seu carrinho foi atualizado. Tente selecionar o item novamente.'
+      )
+      if (shouldSync) scheduleSyncCart()
+      setActionError(message)
     }
   }
 
-  async function handleIncrease(item: ProductCartResponse) {
-    if (updatingId || maxedIds.has(item.id)) return
+  function handleIncrease(item: ProductCartResponse) {
+    if (!guardSessionAvailable() || maxedIds.has(item.id) || pendingIds.has(item.id)) return
     setActionError('')
-    setUpdatingId(item.id)
 
-    try {
-      // Usa o estoque já retornado em GET /cart para resposta instantânea sem chamar GET /products/:id
-      let stock: number | null = typeof item.stock === 'number' ? item.stock : null
+    const current = itemsRef.current.find((i) => i.id === item.id) ?? item
+    const knownStock = typeof current.stock === 'number' ? current.stock : null
 
-      if (stock === null) {
-        try {
-          const product = await ProductReadService(item.product_id)
-          stock = Number(product?.quantity ?? 0)
-        } catch (err: unknown) {
-          logClientError('MainCart:checkStock', err, { productId: item.product_id })
-          if (!isGuest) {
-            setActionError('Não conseguimos confirmar o estoque deste item no momento.')
-            return
-          }
-        }
-      }
-
-      if (stock !== null && item.quantity >= stock) {
-        markMaxed(item.id, true)
+    if (knownStock !== null) {
+      if (current.quantity >= knownStock) {
+        markMaxed(current.id, true)
         return
       }
 
-      const nextQty = item.quantity + 1
-
+      const nextQty = current.quantity + 1
       updateList((prev) =>
         prev.map((i) =>
-          i.id === item.id
+          i.id === current.id ? { ...i, quantity: nextQty, stock: knownStock } : i
+        )
+      )
+      emitCartOptimistic({ delta: 1, animate: true })
+      if (nextQty >= knownStock) markMaxed(current.id, true)
+
+      if (isGuest) {
+        guestCartService.updateQuantity(current.product_id, nextQty)
+        return
+      }
+
+      enqueueItemOp(current.id, async () => {
+        try {
+          await CreateCart({ product_id: current.product_id, quantity: nextQty })
+          pendingSyncRef.current = true
+        } catch (err: unknown) {
+          logClientError('MainCart:handleIncrease', err, { itemId: current.id })
+          updateList((prev) =>
+            prev.map((i) =>
+              i.id === current.id ? { ...i, quantity: Math.max(1, i.quantity - 1) } : i
+            )
+          )
+          emitCartOptimistic({ delta: -1, animate: false })
+          markMaxed(current.id, false)
+          const { message, shouldSync } = getMutationErrorMessage(
+            err,
+            'Não foi possível aumentar a quantidade agora. Tente novamente.'
+          )
+          if (shouldSync) pendingSyncRef.current = true
+          setActionError(message)
+        }
+      })
+      return
+    }
+
+    // Fallback quando o item ainda não tem estoque carregado
+    enqueueItemOp(current.id, async () => {
+      let stock: number | null = null
+      try {
+        const product = await ProductReadService(current.product_id)
+        stock = Number(product?.quantity ?? 0)
+      } catch (err: unknown) {
+        logClientError('MainCart:checkStock', err, { productId: current.product_id })
+        if (!isGuestRef.current) {
+          setActionError('Não conseguimos confirmar o estoque deste item no momento.')
+          return
+        }
+      }
+
+      const latest = itemsRef.current.find((i) => i.id === current.id) ?? current
+      if (stock !== null && latest.quantity >= stock) {
+        markMaxed(current.id, true)
+        return
+      }
+
+      const nextQty = latest.quantity + 1
+      updateList((prev) =>
+        prev.map((i) =>
+          i.id === current.id
             ? { ...i, quantity: nextQty, ...(stock !== null ? { stock } : {}) }
             : i
         )
       )
       emitCartOptimistic({ delta: 1, animate: true })
+      if (stock !== null && nextQty >= stock) markMaxed(current.id, true)
 
-      if (isGuest) {
-        guestCartService.updateQuantity(item.product_id, nextQty)
-        if (stock !== null && nextQty >= stock) markMaxed(item.id, true)
+      if (isGuestRef.current) {
+        guestCartService.updateQuantity(current.product_id, nextQty)
         return
       }
 
       try {
-        await CreateCart({ product_id: item.product_id, quantity: nextQty })
-        if (stock !== null && nextQty >= stock) markMaxed(item.id, true)
+        await CreateCart({ product_id: current.product_id, quantity: nextQty })
+        pendingSyncRef.current = true
       } catch (err: unknown) {
-        logClientError('MainCart:handleIncrease', err, { itemId: item.id })
+        logClientError('MainCart:handleIncrease', err, { itemId: current.id })
         updateList((prev) =>
-          prev.map((i) => (i.id === item.id ? { ...i, quantity: item.quantity } : i))
+          prev.map((i) =>
+            i.id === current.id ? { ...i, quantity: Math.max(1, i.quantity - 1) } : i
+          )
         )
         emitCartOptimistic({ delta: -1, animate: false })
-        setActionError('Não foi possível aumentar a quantidade agora. Tente novamente.')
+        markMaxed(current.id, false)
+        const { message, shouldSync } = getMutationErrorMessage(
+          err,
+          'Não foi possível aumentar a quantidade agora. Tente novamente.'
+        )
+        if (shouldSync) pendingSyncRef.current = true
+        setActionError(message)
       }
-    } finally {
-      setUpdatingId(null)
-    }
+    })
   }
 
-  async function handleDecrease(item: ProductCartResponse) {
-    if (item.quantity <= 1 || updatingId || pendingIds.has(item.id)) return
+  function handleDecrease(item: ProductCartResponse) {
+    if (!guardSessionAvailable() || pendingIds.has(item.id)) return
+    const current = itemsRef.current.find((i) => i.id === item.id) ?? item
+    if (current.quantity <= 1) return
+
     setActionError('')
-    setUpdatingId(item.id)
+    const nextQty = current.quantity - 1
 
     updateList((prev) =>
-      prev.map((i) => (i.id === item.id ? { ...i, quantity: i.quantity - 1 } : i))
+      prev.map((i) => (i.id === current.id ? { ...i, quantity: nextQty } : i))
     )
     emitCartOptimistic({ delta: -1, animate: true })
+    markMaxed(current.id, false)
 
     if (isGuest) {
-      guestCartService.updateQuantity(item.product_id, item.quantity - 1)
-      markMaxed(item.id, false)
-      setUpdatingId(null)
+      guestCartService.updateQuantity(current.product_id, nextQty)
       return
     }
 
-    try {
-      await DecreaseProductCart({ id: item.id, quantity: 1 })
-      markMaxed(item.id, false)
-    } catch (err: unknown) {
-      logClientError('MainCart:handleDecrease', err, { itemId: item.id })
-      updateList((prev) =>
-        prev.map((i) => (i.id === item.id ? { ...i, quantity: item.quantity } : i))
-      )
-      emitCartOptimistic({ delta: 1, animate: false })
-      if (err instanceof ApiError && err.status === 401) {
-        setActionError('Sua sessão expirou. Faça login novamente.')
-      } else if (err instanceof ApiError && err.status === 404) {
-        onSyncCart?.()
-        setActionError('Seu carrinho foi atualizado. Tente novamente.')
-      } else {
-        setActionError('Não foi possível diminuir a quantidade agora. Tente novamente.')
+    enqueueItemOp(current.id, async () => {
+      try {
+        await DecreaseProductCart({ id: current.id, quantity: 1 })
+      } catch (err: unknown) {
+        logClientError('MainCart:handleDecrease', err, { itemId: current.id })
+        updateList((prev) =>
+          prev.map((i) => (i.id === current.id ? { ...i, quantity: i.quantity + 1 } : i))
+        )
+        emitCartOptimistic({ delta: 1, animate: false })
+        const { message, shouldSync } = getMutationErrorMessage(
+          err,
+          'Não foi possível diminuir a quantidade agora. Tente novamente.'
+        )
+        if (shouldSync) pendingSyncRef.current = true
+        setActionError(message)
       }
-    } finally {
-      setUpdatingId(null)
-    }
+    })
   }
 
   function handleRemove(item: ProductCartResponse) {
-    if (timersRef.current.has(item.id)) return
+    if (!guardSessionAvailable() || timersRef.current.has(item.id)) return
     setActionError('')
 
-    const index = items.findIndex((i) => i.id === item.id)
-    setPending(item.id, true)
+    const current = itemsRef.current.find((i) => i.id === item.id) ?? item
+    const index = itemsRef.current.findIndex((i) => i.id === current.id)
+    pendingRemovalsRef.current.set(current.id, { item: current, index: Math.max(0, index) })
+    setPending(current.id, true)
 
     const timer = setTimeout(() => {
-      timersRef.current.delete(item.id)
-      void commitRemove(item, index)
+      timersRef.current.delete(current.id)
+      pendingRemovalsRef.current.delete(current.id)
+      commitRemove(current.id, current, Math.max(0, index))
     }, REMOVE_DELAY)
 
-    timersRef.current.set(item.id, timer)
+    timersRef.current.set(current.id, timer)
   }
 
   function handleCancelRemove(item: ProductCartResponse) {
     const timer = timersRef.current.get(item.id)
     if (timer) clearTimeout(timer)
     timersRef.current.delete(item.id)
+    pendingRemovalsRef.current.delete(item.id)
     setPending(item.id, false)
+    flushSyncIfIdle()
   }
 
-  async function commitRemove(item: ProductCartResponse, index: number) {
-    updateList((prev) => prev.filter((i) => i.id !== item.id))
-    emitCartOptimistic({ delta: -item.quantity, animate: true })
-    setPending(item.id, false)
-    markMaxed(item.id, false)
+  function commitRemove(itemId: string, fallbackItem: ProductCartResponse, fallbackIndex: number) {
+    const current = itemsRef.current.find((i) => i.id === itemId) ?? fallbackItem
+    updateList((prev) => prev.filter((i) => i.id !== itemId))
+    emitCartOptimistic({ delta: -current.quantity, animate: true })
+    setPending(itemId, false)
+    markMaxed(itemId, false)
 
-    if (isGuest) {
-      guestCartService.removeItem(item.product_id)
+    if (isGuestRef.current) {
+      guestCartService.removeItem(current.product_id)
       return
     }
 
-    try {
-      await RemoveProductCart(item.id)
-      onSyncCart?.()
-    } catch (err: unknown) {
-      if (err instanceof ApiError && err.status === 404) {
-        // Item já não existe no servidor: mantém removido e ressincroniza
-        onSyncCart?.()
-      } else {
-        logClientError('MainCart:commitRemove', err, { itemId: item.id })
-        emitCartOptimistic({ delta: item.quantity, animate: false })
-        updateList((prev) => {
-          if (prev.some((i) => i.id === item.id)) return prev
-          const next = [...prev]
-          next.splice(Math.min(index, next.length), 0, item)
-          return next
-        })
-        if (err instanceof ApiError && err.status === 401) {
-          setActionError('Sua sessão expirou. Faça login novamente.')
+    enqueueItemOp(itemId, async () => {
+      try {
+        await RemoveProductCart(itemId)
+        pendingSyncRef.current = true
+      } catch (err: unknown) {
+        if (err instanceof ApiError && err.status === 404) {
+          // Item já não existe no servidor: mantém removido e ressincroniza ao drenar a fila
+          pendingSyncRef.current = true
         } else {
-          setActionError('Não foi possível remover o item. Ele foi mantido na sua sacola.')
+          logClientError('MainCart:commitRemove', err, { itemId })
+          emitCartOptimistic({ delta: current.quantity, animate: false })
+          updateList((prev) => {
+            if (prev.some((i) => i.id === itemId)) return prev
+            const next = [...prev]
+            next.splice(Math.min(fallbackIndex, next.length), 0, current)
+            return next
+          })
+          const { message, shouldSync } = getMutationErrorMessage(
+            err,
+            'Não foi possível remover o item. Ele foi mantido na sua sacola.'
+          )
+          if (shouldSync) pendingSyncRef.current = true
+          setActionError(message)
         }
       }
-    }
+    })
   }
 
   function handleOpenCheckout() {
     if (selectedItems.length === 0) return
+    if (!guardSessionAvailable()) return
     setCheckoutError('')
 
     if (!isAuthenticated || isGuest) {
@@ -502,6 +696,7 @@ export default function MainCart({
             <div className="divide-y divide-black/10 dark:divide-white/10">
               {items.map((item) => {
                 const isPending = pendingIds.has(item.id)
+                const isUpdating = updatingIds.has(item.id)
 
                 return (
                   <div
@@ -511,23 +706,29 @@ export default function MainCart({
                     }`}
                   >
                     <div className="flex items-center gap-3.5 flex-1 min-w-0">
-                      {/* Checkbox */}
+                      {/* Checkbox com área de toque confortável no mobile */}
                       <button
                         type="button"
                         onClick={() => handleToggleOne(item)}
+                        disabled={sessionUnavailable}
                         aria-label={
                           item.isSelect
                             ? `Desmarcar ${item.name}`
                             : `Selecionar ${item.name}`
                         }
                         aria-pressed={item.isSelect}
-                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black dark:focus-visible:outline-white ${
-                          item.isSelect
-                            ? 'border-black dark:border-white bg-black dark:bg-white text-white dark:text-black'
-                            : 'border-neutral-300 dark:border-neutral-600 bg-white dark:bg-[#121212] text-transparent'
-                        }`}
+                        className="flex h-10 w-10 -ml-2 shrink-0 items-center justify-center rounded-lg touch-manipulation cursor-pointer disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black dark:focus-visible:outline-white"
                       >
-                        <Check size={14} strokeWidth={3} aria-hidden="true" />
+                        <span
+                          aria-hidden="true"
+                          className={`flex h-5 w-5 items-center justify-center rounded-md border transition-colors ${
+                            item.isSelect
+                              ? 'border-black dark:border-white bg-black dark:bg-white text-white dark:text-black'
+                              : 'border-neutral-300 dark:border-neutral-600 bg-white dark:bg-[#121212] text-transparent'
+                          }`}
+                        >
+                          <Check size={14} strokeWidth={3} />
+                        </span>
                       </button>
 
                       {/* Container Imagem com fundo branco constante */}
@@ -559,29 +760,36 @@ export default function MainCart({
                       </div>
                     </div>
 
-                    {/* Ações: Quantidade e Deletar */}
+                    {/* Ações: Quantidade e Deletar (alvos >= 40px e touch-manipulation para mobile) */}
                     <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto pt-2 sm:pt-0">
-                      <div className="flex items-center rounded-full bg-[#F2F0F1] dark:bg-[#242424] px-2 py-1">
+                      <div className="flex items-center rounded-full bg-[#F2F0F1] dark:bg-[#242424] px-1.5 py-1">
                         <button
                           type="button"
                           onClick={() => handleDecrease(item)}
-                          disabled={item.quantity <= 1 || updatingId === item.id || isPending}
+                          disabled={item.quantity <= 1 || isPending || sessionUnavailable}
                           aria-label={`Diminuir quantidade de ${item.name}`}
-                          className="h-7 w-7 rounded-full flex items-center justify-center hover:bg-neutral-300 dark:hover:bg-neutral-700 disabled:opacity-30 transition-colors cursor-pointer"
+                          className="h-10 w-10 sm:h-8 sm:w-8 rounded-full flex items-center justify-center touch-manipulation select-none hover:bg-neutral-300 dark:hover:bg-neutral-700 active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed transition-[transform,background-color,opacity] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black dark:focus-visible:outline-white motion-reduce:transition-none"
                         >
-                          <Minus size={14} aria-hidden="true" />
+                          <Minus size={16} aria-hidden="true" />
                         </button>
-                        <span className="w-8 text-center text-xs font-bold font-sans">
-                          {item.quantity}
+                        <span className="w-9 text-center text-sm sm:text-xs font-bold font-sans flex items-center justify-center gap-1 select-none">
+                          <span>{item.quantity}</span>
+                          {isUpdating && (
+                            <Loader2
+                              size={11}
+                              className="animate-spin text-neutral-500 motion-reduce:animate-none"
+                              aria-hidden="true"
+                            />
+                          )}
                         </span>
                         <button
                           type="button"
                           onClick={() => handleIncrease(item)}
-                          disabled={updatingId === item.id || maxedIds.has(item.id) || isPending}
+                          disabled={maxedIds.has(item.id) || isPending || sessionUnavailable}
                           aria-label={`Aumentar quantidade de ${item.name}`}
-                          className="h-7 w-7 rounded-full flex items-center justify-center hover:bg-neutral-300 dark:hover:bg-neutral-700 disabled:opacity-30 transition-colors cursor-pointer"
+                          className="h-10 w-10 sm:h-8 sm:w-8 rounded-full flex items-center justify-center touch-manipulation select-none hover:bg-neutral-300 dark:hover:bg-neutral-700 active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed transition-[transform,background-color,opacity] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black dark:focus-visible:outline-white motion-reduce:transition-none"
                         >
-                          <Plus size={14} aria-hidden="true" />
+                          <Plus size={16} aria-hidden="true" />
                         </button>
                       </div>
 
@@ -589,7 +797,7 @@ export default function MainCart({
                         <button
                           type="button"
                           onClick={() => handleCancelRemove(item)}
-                          className="flex h-9 px-3 rounded-full bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300 text-xs font-bold items-center gap-1 hover:bg-red-200 dark:hover:bg-red-900/60 transition-colors cursor-pointer"
+                          className="flex h-10 px-3.5 rounded-full bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300 text-xs font-bold items-center gap-1 touch-manipulation active:scale-95 hover:bg-red-200 dark:hover:bg-red-900/60 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
                         >
                           <X size={14} aria-hidden="true" /> Desfazer
                         </button>
@@ -597,10 +805,11 @@ export default function MainCart({
                         <button
                           type="button"
                           onClick={() => handleRemove(item)}
-                          className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-full transition-colors cursor-pointer"
+                          disabled={sessionUnavailable}
+                          className="h-11 w-11 sm:h-9 sm:w-9 flex items-center justify-center text-red-600 dark:text-red-400 touch-manipulation active:scale-95 hover:bg-red-50 dark:hover:bg-red-950/40 disabled:opacity-30 disabled:cursor-not-allowed rounded-full transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
                           aria-label={`Remover ${item.name}`}
                         >
-                          <Trash2 size={18} aria-hidden="true" />
+                          <Trash2 size={19} aria-hidden="true" />
                         </button>
                       )}
                     </div>

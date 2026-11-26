@@ -17,6 +17,7 @@ export default function CartPage() {
     cartErrorVariant,
     cartIsStale,
     cartCachedAt,
+    refreshSession,
     refreshCart,
   } = useSession()
 
@@ -28,10 +29,17 @@ export default function CartPage() {
   }, [authLoaded, isAuthenticated, refreshCart])
 
   const handleRetry = useCallback(() => {
+    if (!isAuthenticated) {
+      void refreshSession()
+      return
+    }
     void refreshCart({ silent: false })
-  }, [refreshCart])
+  }, [isAuthenticated, refreshSession, refreshCart])
 
   const loading = !authLoaded || (!cartLoaded && !cart)
+  // Evita tratar cache stale de usuário autenticado como carrinho visitante quando ReadMe falhou por rede/timeout
+  const sessionUnavailable = authLoaded && !isAuthenticated && cartIsStale
+  const isGuest = authLoaded && !isAuthenticated && !cartIsStale
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#121212] text-black dark:text-white font-sans flex flex-col justify-between transition-colors">
@@ -47,7 +55,8 @@ export default function CartPage() {
             cachedAt={cartCachedAt}
             onRetry={handleRetry}
             onSyncCart={() => void refreshCart({ silent: true })}
-            isGuest={authLoaded && !isAuthenticated}
+            isGuest={isGuest}
+            sessionUnavailable={sessionUnavailable}
           />
         </ErrorBoundary>
       </div>

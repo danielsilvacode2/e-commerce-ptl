@@ -23,10 +23,10 @@ const nextConfig: NextConfig = {
     },
   },
   async rewrites() {
-    const rawApiUrl = process.env.API_INTERNAL_URL?.trim().replace(/\/+$/, "");
-    if (!rawApiUrl) {
-      return [];
-    }
+    const rawApiUrl = (
+      process.env.API_INTERNAL_URL?.trim() ||
+      "https://e-commerce-api-d5lu.onrender.com"
+    ).replace(/\/+$/, "");
 
     const destinationBase = rawApiUrl.endsWith("/api/v1")
       ? rawApiUrl

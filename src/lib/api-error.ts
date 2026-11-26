@@ -28,6 +28,8 @@ export class ApiError extends Error {
 }
 
 export const DEFAULT_FETCH_TIMEOUT_MS = 10_000
+export const CART_MUTATION_TIMEOUT_MS = 20_000
+export const SESSION_FETCH_TIMEOUT_MS = 15_000
 
 /**
  * Executa fetch com timeout controlado e classificação de erros de rede/HTTP.
