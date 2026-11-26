@@ -1,6 +1,22 @@
-const API_KEY = process.env.NEXT_PUBLIC_IMGBB_API_KEY
+import ApiUrlBase from '../api'
+import { fetchWithTimeout } from '@/src/lib/api-error'
+
 const MAX_IMAGE_DIMENSION = 1200
 const WEBP_QUALITY = 0.84
+const UPLOAD_TIMEOUT_MS = 30_000
+
+interface UploadImageResponseBody {
+  url?: string
+}
+
+interface UploadImageApiEnvelope {
+  Response?: {
+    status?: number
+    mensagem?: string
+  }
+  'Body:'?: UploadImageResponseBody
+  Body?: UploadImageResponseBody
+}
 
 // Redimensiona e comprime imagens (JPG/PNG/WebP) no navegador antes do upload para reduzir drasticamente o peso na vitrine.
 async function optimizeImageBeforeUpload(file: File): Promise<File> {
@@ -63,16 +79,36 @@ export async function uploadToImgBB(file: File): Promise<string> {
   const formData = new FormData()
   formData.append('image', optimizedFile)
 
-  const response = await fetch(`https://api.imgbb.com/1/upload?key=${API_KEY}`, {
-    method: 'POST',
-    body: formData,
-  })
+  const baseUrl = ApiUrlBase()
+  const response = await fetchWithTimeout(
+    `${baseUrl}/products/image`,
+    {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    },
+    UPLOAD_TIMEOUT_MS
+  )
 
-  const data = await response.json()
+  const data = (await response.json().catch(() => null)) as UploadImageApiEnvelope | null
 
-  if (!data.success) {
-    throw new Error('Error uploading the image.')
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Sessão expirada. Faça login novamente como administrador.')
+    }
+    if (response.status === 403) {
+      throw new Error('Você não tem permissão para enviar imagens de produtos.')
+    }
+    if (response.status === 413) {
+      throw new Error('A imagem excede o limite máximo de 5 MB.')
+    }
+    throw new Error(data?.Response?.mensagem || 'Erro ao enviar a imagem. Tente novamente.')
   }
 
-  return data.data.url
+  const uploadedUrl = (data?.['Body:']?.url ?? data?.Body?.url)?.trim()
+  if (!uploadedUrl) {
+    throw new Error('Resposta inválida ao enviar a imagem.')
+  }
+
+  return uploadedUrl
 }
