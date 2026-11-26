@@ -6,9 +6,6 @@ export default async function CancelOrderService(orderId: string): Promise<void>
     const res = await fetch(`${baseUrl}/orders/${orderId}/cancel`, {
         method: 'PUT',
         credentials: 'include',
-        headers: {
-            'Content-Type': 'application/json',
-        },
     });
 
     if (res.status === 401) {

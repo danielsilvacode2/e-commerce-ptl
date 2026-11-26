@@ -1,5 +1,5 @@
 import ApiUrlBase from '../api'
-import { ApiError, createHttpApiError, fetchWithTimeout } from '@/src/lib/api-error'
+import { createHttpApiError, fetchWithTimeout } from '@/src/lib/api-error'
 
 export interface ProductCartResponse {
   id: string
@@ -48,15 +48,19 @@ export default async function ReadCart(): Promise<CartResponse> {
     throw createHttpApiError(res.status, 'ReadCart')
   }
 
-  const json = (await res.json()) as CartApiEnvelope
-  const body = json['Body:'] ?? json.Body
+  const json = (await res.json().catch(() => null)) as CartApiEnvelope | null
+  const body = json?.['Body:'] ?? json?.Body
 
-  if (!body) {
-    throw new ApiError('generic', json.Response?.mensagem ?? 'Resposta inválida do carrinho')
+  if (!body || Array.isArray(body)) {
+    return {
+      id: '',
+      user: { id: '', name: '', email: '', role: '' },
+      list: [],
+    }
   }
 
   return {
     ...body,
-    list: body.list ?? [],
+    list: Array.isArray(body.list) ? body.list : [],
   }
 }

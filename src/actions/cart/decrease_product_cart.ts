@@ -1,33 +1,29 @@
-import ApiUrlBase from "../api"
-
+import ApiUrlBase from '../api'
+import { createHttpApiError, fetchWithTimeout } from '@/src/lib/api-error'
 
 interface DecreaseProductCartProps {
-    id: string
-    quantity: number
+  id: string
+  quantity: number
 }
 
-export default async function DecreaseProductCart({ id, quantity }: DecreaseProductCartProps) {
+export default async function DecreaseProductCart({
+  id,
+  quantity,
+}: DecreaseProductCartProps): Promise<void> {
+  const urlBase = ApiUrlBase()
 
-    const urlBase = ApiUrlBase()
+  const res = await fetchWithTimeout(`${urlBase}/cart/decrease/${id}`, {
+    method: 'PUT',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      quantity,
+    }),
+  })
 
-    const res = await fetch(`${urlBase}/cart/decrease/${id}`, {
-        method: "PUT",
-        credentials: "include",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-            quantity
-        }),
-    })
-
-    if (!res.ok) {
-
-        if (res.status === 422) {
-            return
-        }
-
-        throw new Error("Erro ao atualizar is select do produto no carrinho")
-    }
-
+  if (!res.ok) {
+    throw createHttpApiError(res.status, 'DecreaseProductCart')
+  }
 }

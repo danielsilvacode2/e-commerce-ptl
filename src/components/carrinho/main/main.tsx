@@ -14,7 +14,7 @@ import DecreaseProductCart from '@/src/actions/cart/decrease_product_cart'
 import CreateOrderService from '@/src/actions/order/create_order'
 import { useSession } from '@/src/components/providers/session-provider'
 import { guestCartService } from '@/src/services/guest-cart'
-import { ErrorStateVariant, logClientError } from '@/src/lib/api-error'
+import { ApiError, ErrorStateVariant, logClientError } from '@/src/lib/api-error'
 import { emitCartOptimistic } from '@/src/lib/cart-events'
 import { CartPageSkeleton } from '@/src/components/ui/skeletons'
 import ErrorState from '@/src/components/ui/error-state'
@@ -90,6 +90,7 @@ export default function MainCart({
   const [zipCode, setZipCode] = useState('')
   const [submittingOrder, setSubmittingOrder] = useState(false)
   const [checkoutError, setCheckoutError] = useState('')
+  const autoCheckoutHandledRef = useRef(false)
 
   useEffect(() => {
     const timers = timersRef.current
@@ -98,6 +99,19 @@ export default function MainCart({
       timers.clear()
     }
   }, [])
+
+  // Reabre o modal de checkout automaticamente após o login quando vindo de /carrinho?checkout=true
+  useEffect(() => {
+    if (autoCheckoutHandledRef.current || loading || isGuest || !isAuthenticated || selectedItems.length === 0) {
+      return
+    }
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('checkout') === 'true') {
+      autoCheckoutHandledRef.current = true
+      queueMicrotask(() => setCheckoutModalOpen(true))
+    }
+  }, [loading, isGuest, isAuthenticated, selectedItems.length])
 
   function markMaxed(id: string, maxed: boolean) {
     setMaxedIds((prev) => {
@@ -138,7 +152,11 @@ export default function MainCart({
     } catch (err: unknown) {
       logClientError('MainCart:handleToggleAll', err)
       updateList(() => previous)
-      setActionError('Não foi possível atualizar a seleção dos itens. Tente novamente.')
+      if (err instanceof ApiError && err.status === 401) {
+        setActionError('Sua sessão expirou. Faça login novamente.')
+      } else {
+        setActionError('Não foi possível atualizar a seleção dos itens. Tente novamente.')
+      }
     }
   }
 
@@ -161,7 +179,14 @@ export default function MainCart({
       updateList((prev) =>
         prev.map((i) => (i.id === item.id ? { ...i, isSelect: item.isSelect } : i))
       )
-      setActionError('Não foi possível atualizar a seleção do item. Tente novamente.')
+      if (err instanceof ApiError && err.status === 401) {
+        setActionError('Sua sessão expirou. Faça login novamente.')
+      } else if (err instanceof ApiError && err.status === 404) {
+        onSyncCart?.()
+        setActionError('Seu carrinho foi atualizado. Tente selecionar o item novamente.')
+      } else {
+        setActionError('Não foi possível atualizar a seleção do item. Tente novamente.')
+      }
     }
   }
 
@@ -251,7 +276,14 @@ export default function MainCart({
         prev.map((i) => (i.id === item.id ? { ...i, quantity: item.quantity } : i))
       )
       emitCartOptimistic({ delta: 1, animate: false })
-      setActionError('Não foi possível diminuir a quantidade agora. Tente novamente.')
+      if (err instanceof ApiError && err.status === 401) {
+        setActionError('Sua sessão expirou. Faça login novamente.')
+      } else if (err instanceof ApiError && err.status === 404) {
+        onSyncCart?.()
+        setActionError('Seu carrinho foi atualizado. Tente novamente.')
+      } else {
+        setActionError('Não foi possível diminuir a quantidade agora. Tente novamente.')
+      }
     } finally {
       setUpdatingId(null)
     }
@@ -294,7 +326,8 @@ export default function MainCart({
       await RemoveProductCart(item.id)
       onSyncCart?.()
     } catch (err: unknown) {
-      if (err instanceof Error && err.message === '204') {
+      if (err instanceof ApiError && err.status === 404) {
+        // Item já não existe no servidor: mantém removido e ressincroniza
         onSyncCart?.()
       } else {
         logClientError('MainCart:commitRemove', err, { itemId: item.id })
@@ -305,7 +338,11 @@ export default function MainCart({
           next.splice(Math.min(index, next.length), 0, item)
           return next
         })
-        setActionError('Não foi possível remover o item. Ele foi mantido na sua sacola.')
+        if (err instanceof ApiError && err.status === 401) {
+          setActionError('Sua sessão expirou. Faça login novamente.')
+        } else {
+          setActionError('Não foi possível remover o item. Ele foi mantido na sua sacola.')
+        }
       }
     }
   }
@@ -344,11 +381,20 @@ export default function MainCart({
 
     try {
       const order = await CreateOrderService({ zip_code: cleanZip })
+      const removedQty = selectedItems.reduce((acc, i) => acc + i.quantity, 0)
+      updateList((prev) => prev.filter((i) => !i.isSelect))
+      if (removedQty > 0) {
+        emitCartOptimistic({ delta: -removedQty, animate: false })
+      }
       onSyncCart?.()
       router.push(`/pedidos/${order.id}/pagamento`)
     } catch (err: unknown) {
       logClientError('MainCart:handleConfirmOrder', err)
-      setCheckoutError('Não foi possível finalizar o pedido agora. Verifique sua conexão e tente novamente.')
+      setCheckoutError(
+        err instanceof Error && err.message
+          ? err.message
+          : 'Não foi possível finalizar o pedido agora. Verifique sua conexão e tente novamente.'
+      )
     } finally {
       setSubmittingOrder(false)
     }

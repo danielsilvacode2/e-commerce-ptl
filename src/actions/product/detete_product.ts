@@ -10,12 +10,9 @@ export default async function DeleteProductById({Id}: DeleteProductByIdProps) {
 
     const baseUrl = ApiUrlBase()
 
-    const res = await fetch(`${baseUrl}/products/${Id}`,{
+    const res = await fetch(`${baseUrl}/products/${Id}`, {
         method: "DELETE",
         credentials: "include",
-        headers: {
-            "Content-Type": "application/json",
-        },
     })
 
     if (!res.ok){

@@ -20,7 +20,7 @@ import {
 } from '@/src/services/guest-cart'
 import { CART_OPTIMISTIC_EVENT, CartOptimisticDetail } from '@/src/lib/cart-events'
 import { clientCache } from '@/src/lib/client-cache'
-import { classifyErrorVariant, ErrorStateVariant, logClientError } from '@/src/lib/api-error'
+import { ApiError, classifyErrorVariant, ErrorStateVariant, logClientError } from '@/src/lib/api-error'
 
 const CART_CACHE_KEY = 'cart:me'
 const CART_CACHE_TTL_MS = 5 * 60 * 1000
@@ -62,8 +62,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const userRef = useRef<UserResponse | null>(null)
   const authInFlightRef = useRef<Promise<UserResponse | null> | null>(null)
   const cartInFlightRef = useRef<Promise<void> | null>(null)
+  const cartInFlightVersionRef = useRef<number>(-1)
+  // Controla versão de mutações locais para impedir que um GET /cart antigo sobrescreva remoções/edições recentes
+  const cartMutationVersionRef = useRef<number>(0)
 
   const setCart: Dispatch<SetStateAction<CartResponse | null>> = useCallback((updater) => {
+    cartMutationVersionRef.current += 1
     setOptimisticTotal(null)
     setCartState((prev) => {
       const next = typeof updater === 'function' ? updater(prev) : updater
@@ -87,9 +91,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         return
       }
 
-      if (cartInFlightRef.current) {
+      const requestVersion = cartMutationVersionRef.current
+
+      if (cartInFlightRef.current && cartInFlightVersionRef.current === requestVersion) {
         return cartInFlightRef.current
       }
+
+      cartInFlightVersionRef.current = requestVersion
 
       // Stale-While-Revalidate: exibe carrinho em cache imediatamente enquanto revalida
       const cached = clientCache.get<CartResponse>(CART_CACHE_KEY, CART_CACHE_TTL_MS)
@@ -98,9 +106,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         setCartLoaded(true)
       }
 
-      const job = (async () => {
+      let job: Promise<void> | null = null
+      job = (async () => {
         try {
           const res = await ReadCart()
+          // Se houve mutação local enquanto o GET estava em voo, descarta resposta obsoleta
+          if (cartMutationVersionRef.current !== requestVersion) {
+            return
+          }
           clientCache.set(CART_CACHE_KEY, res)
           setCartState(res)
           setOptimisticTotal(null)
@@ -109,6 +122,19 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           setCartCachedAt(null)
         } catch (err: unknown) {
           logClientError('SessionProvider:ReadCart', err)
+          if (cartMutationVersionRef.current !== requestVersion) {
+            return
+          }
+          if (err instanceof ApiError && err.status === 401) {
+            userRef.current = null
+            setUser(null)
+            clientCache.remove(CART_CACHE_KEY)
+            setCartState(guestCartService.toCartResponse())
+            setCartIsStale(false)
+            setCartCachedAt(null)
+            setCartErrorVariant(null)
+            return
+          }
           const fallbackCached = clientCache.get<CartResponse>(CART_CACHE_KEY)
           if (fallbackCached) {
             setCartState(fallbackCached.data)
@@ -123,7 +149,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           }
         } finally {
           setCartLoaded(true)
-          cartInFlightRef.current = null
+          if (cartInFlightRef.current === job) {
+            cartInFlightRef.current = null
+            cartInFlightVersionRef.current = -1
+          }
         }
       })()
 

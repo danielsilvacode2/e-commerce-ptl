@@ -1,27 +1,27 @@
-import ApiUrlBase from "../api"
+import ApiUrlBase from '../api'
+import { createHttpApiError, fetchWithTimeout } from '@/src/lib/api-error'
 
-
-interface updateIsSelectProps {
-    select: boolean
+interface UpdateAllIsSelectProps {
+  select: boolean
 }
 
-export default async function UpdateAllIsSelectCart({ select }: updateIsSelectProps) {
+export default async function UpdateAllIsSelectCart({
+  select,
+}: UpdateAllIsSelectProps): Promise<void> {
+  const urlBase = ApiUrlBase()
 
-    const urlBase = ApiUrlBase()
+  const res = await fetchWithTimeout(`${urlBase}/cart`, {
+    method: 'PUT',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      select,
+    }),
+  })
 
-    const res = await fetch(`${urlBase}/cart`, {
-        method: "PUT",
-        credentials: "include",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-            select
-        }),
-    })
-
-    if (!res.ok) {
-        throw new Error("Erro ao atualizar all is select do produto no carrinho")
-    }
-
+  if (!res.ok) {
+    throw createHttpApiError(res.status, 'UpdateAllIsSelectCart')
+  }
 }

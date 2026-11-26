@@ -1,24 +1,15 @@
-import ApiUrlBase from "../api";
+import ApiUrlBase from '../api'
+import { createHttpApiError, fetchWithTimeout } from '@/src/lib/api-error'
 
-export default async function RemoveProductCart(id: string) {
+export default async function RemoveProductCart(id: string): Promise<void> {
+  const baseUrl = ApiUrlBase()
 
-    const baseUrl = ApiUrlBase()
+  const res = await fetchWithTimeout(`${baseUrl}/cart/${id}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  })
 
-    const res = await fetch(`${baseUrl}/cart/${id}`, {
-        method: "DELETE",
-        credentials: "include",
-        headers: {
-            "Content-Type": "application/json",
-        },
-    })
-
-    if (res.status === 204) {
-        throw new Error("204")
-        return
-    }
-
-    if (!res.ok) {
-        throw new Error("Erro ao deletar produto")
-    }
-
+  if (!res.ok) {
+    throw createHttpApiError(res.status, 'RemoveProductCart')
+  }
 }
