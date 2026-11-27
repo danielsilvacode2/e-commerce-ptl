@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { OrderResponse } from '@/src/types/order'
 import AdminReadAllOrdersService from '@/src/actions/order/admin_read_all_orders'
+import { formatAddressCompact } from '@/src/lib/address-rules'
 import { getStatusConfig } from '@/src/lib/order-status'
 
 const PAGE_LIMIT = 8
@@ -203,9 +204,9 @@ export default function AdminOrdersClient() {
                                                         {formatDate(order.created_at)}
                                                     </span>
                                                     <span>•</span>
-                                                    <span className="flex items-center gap-1.5 font-mono">
-                                                        <MapPin size={12} />
-                                                        CEP: {order.zip_code}
+                                                    <span className="flex items-center gap-1.5">
+                                                        <MapPin size={12} className="shrink-0" aria-hidden="true" />
+                                                        {formatAddressCompact(order.address)}
                                                     </span>
                                                 </div>
                                             </div>

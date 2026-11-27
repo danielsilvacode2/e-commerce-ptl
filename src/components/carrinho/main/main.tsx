@@ -11,7 +11,6 @@ import ProductReadService from '@/src/actions/product/read'
 import CreateCart from '@/src/actions/cart/create_cart'
 import RemoveProductCart from '@/src/actions/cart/delete_product_cart'
 import DecreaseProductCart from '@/src/actions/cart/decrease_product_cart'
-import CreateOrderService from '@/src/actions/order/create_order'
 import { useSession } from '@/src/components/providers/session-provider'
 import { guestCartService } from '@/src/services/guest-cart'
 import { ApiError, ErrorStateVariant, logClientError } from '@/src/lib/api-error'
@@ -96,12 +95,6 @@ export default function MainCart({
   const itemInFlightCountRef = useRef<Map<string, number>>(new Map())
   const activeMutationsRef = useRef<number>(0)
   const pendingSyncRef = useRef<boolean>(false)
-
-  // Estado do checkout / CEP
-  const [checkoutModalOpen, setCheckoutModalOpen] = useState(false)
-  const [zipCode, setZipCode] = useState('')
-  const [submittingOrder, setSubmittingOrder] = useState(false)
-  const [checkoutError, setCheckoutError] = useState('')
   const autoCheckoutHandledRef = useRef(false)
 
   useEffect(() => {
@@ -136,7 +129,7 @@ export default function MainCart({
     }
   }, [])
 
-  // Reabre o modal de checkout automaticamente após o login quando vindo de /carrinho?checkout=true
+  // Redireciona links legados /carrinho?checkout=true para a tela dedicada de checkout
   useEffect(() => {
     if (autoCheckoutHandledRef.current || loading || isGuest || !isAuthenticated || selectedItems.length === 0) {
       return
@@ -145,9 +138,9 @@ export default function MainCart({
     const params = new URLSearchParams(window.location.search)
     if (params.get('checkout') === 'true') {
       autoCheckoutHandledRef.current = true
-      queueMicrotask(() => setCheckoutModalOpen(true))
+      router.replace('/checkout')
     }
-  }, [loading, isGuest, isAuthenticated, selectedItems.length])
+  }, [loading, isGuest, isAuthenticated, selectedItems.length, router])
 
   function markMaxed(id: string, maxed: boolean) {
     setMaxedIds((prev) => {
@@ -543,55 +536,13 @@ export default function MainCart({
   function handleOpenCheckout() {
     if (selectedItems.length === 0) return
     if (!guardSessionAvailable()) return
-    setCheckoutError('')
 
     if (!isAuthenticated || isGuest) {
-      router.push('/login?redirect=/carrinho?checkout=true')
+      router.push('/login?redirect=/checkout')
       return
     }
 
-    setCheckoutModalOpen(true)
-  }
-
-  function formatZipCode(val: string) {
-    const raw = val.replace(/\D/g, '').slice(0, 8)
-    if (raw.length > 5) {
-      return `${raw.slice(0, 5)}-${raw.slice(5)}`
-    }
-    return raw
-  }
-
-  async function handleConfirmOrder(e: React.FormEvent) {
-    e.preventDefault()
-    const cleanZip = zipCode.trim()
-
-    if (!/^[0-9]{5}-?[0-9]{3}$/.test(cleanZip)) {
-      setCheckoutError('Informe um CEP válido (ex.: 00000-000).')
-      return
-    }
-
-    setSubmittingOrder(true)
-    setCheckoutError('')
-
-    try {
-      const order = await CreateOrderService({ zip_code: cleanZip })
-      const removedQty = selectedItems.reduce((acc, i) => acc + i.quantity, 0)
-      updateList((prev) => prev.filter((i) => !i.isSelect))
-      if (removedQty > 0) {
-        emitCartOptimistic({ delta: -removedQty, animate: false })
-      }
-      onSyncCart?.()
-      router.push(`/pedidos/${order.id}/pagamento`)
-    } catch (err: unknown) {
-      logClientError('MainCart:handleConfirmOrder', err)
-      setCheckoutError(
-        err instanceof Error && err.message
-          ? err.message
-          : 'Não foi possível finalizar o pedido agora. Verifique sua conexão e tente novamente.'
-      )
-    } finally {
-      setSubmittingOrder(false)
-    }
+    router.push('/checkout')
   }
 
   return (
@@ -857,110 +808,6 @@ export default function MainCart({
               <ArrowRight className="w-4 h-4" aria-hidden="true" />
             </button>
           </aside>
-        </div>
-      )}
-
-      {/* Modal de confirmação de pedido e CEP */}
-      {checkoutModalOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="modal-checkout-title"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm"
-        >
-          <div className="nero-toast-enter w-full max-w-md rounded-3xl bg-white dark:bg-[#181818] p-6 sm:p-8 shadow-2xl border border-black/10 dark:border-white/10">
-            <div className="flex items-center justify-between pb-4 border-b border-black/10 dark:border-white/10">
-              <h2
-                id="modal-checkout-title"
-                className="font-display text-xl font-bold uppercase tracking-tight"
-              >
-                Finalizar Pedido
-              </h2>
-              <button
-                type="button"
-                onClick={() => setCheckoutModalOpen(false)}
-                disabled={submittingOrder}
-                aria-label="Fechar modal"
-                className="p-1.5 rounded-full hover:bg-[#F2F0F1] dark:hover:bg-[#252525] transition-colors cursor-pointer"
-              >
-                <X size={20} aria-hidden="true" />
-              </button>
-            </div>
-
-            <form onSubmit={handleConfirmOrder} className="mt-6 flex flex-col gap-4">
-              <div>
-                <p className="text-xs uppercase tracking-wider text-neutral-500 font-bold">
-                  Resumo da compra:
-                </p>
-                <div className="mt-2 flex items-center justify-between rounded-2xl bg-[#F2F0F1] dark:bg-[#222222] p-4 text-xs">
-                  <span className="text-neutral-700 dark:text-neutral-300 font-medium">
-                    {selectedItems.length}{' '}
-                    {selectedItems.length === 1 ? 'item selecionado' : 'itens selecionados'}
-                  </span>
-                  <span className="font-display font-extrabold text-sm">
-                    {formatPrice(total)}
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="zip-code-input"
-                  className="block text-xs uppercase tracking-wider font-bold mb-1.5"
-                >
-                  CEP de Entrega
-                </label>
-                <input
-                  id="zip-code-input"
-                  type="text"
-                  placeholder="00000-000"
-                  maxLength={9}
-                  value={zipCode}
-                  onChange={(e) => setZipCode(formatZipCode(e.target.value))}
-                  disabled={submittingOrder}
-                  required
-                  className="h-12 w-full rounded-full border border-black/15 dark:border-white/20 bg-white dark:bg-[#121212] px-5 font-mono text-sm tracking-wider outline-none placeholder:text-neutral-400 focus:border-black dark:focus:border-white"
-                />
-                <span className="mt-1 block text-[11px] text-neutral-500 px-3">
-                  Digite seu CEP no formato 00000-000
-                </span>
-              </div>
-
-              {checkoutError && (
-                <div
-                  role="alert"
-                  className="p-3 rounded-2xl bg-red-50 dark:bg-red-950/40 text-xs text-red-700 dark:text-red-300 font-medium"
-                >
-                  {checkoutError}
-                </div>
-              )}
-
-              <div className="mt-4 flex items-center justify-end gap-3 pt-4 border-t border-black/10 dark:border-white/10">
-                <button
-                  type="button"
-                  onClick={() => setCheckoutModalOpen(false)}
-                  disabled={submittingOrder}
-                  className="h-11 px-5 rounded-full border border-black/15 dark:border-white/20 text-xs font-semibold uppercase tracking-wider hover:bg-[#F2F0F1] dark:hover:bg-[#252525] transition-colors cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={submittingOrder || !zipCode.trim()}
-                  className="flex h-11 items-center justify-center gap-2 rounded-full bg-black text-white dark:bg-white dark:text-black px-6 text-xs font-semibold uppercase tracking-wider hover:opacity-90 transition-opacity disabled:opacity-40 cursor-pointer"
-                >
-                  {submittingOrder ? (
-                    <>
-                      <Loader2 size={14} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
-                      Processando...
-                    </>
-                  ) : (
-                    'Confirmar Pedido'
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
         </div>
       )}
     </main>

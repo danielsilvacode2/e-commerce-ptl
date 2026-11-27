@@ -37,3 +37,4 @@ export default function ApiUrlBase(): string {
   // Proxy same-origin via next.config.ts: evita bloqueio de cookies third-party no iOS/mobile e preflights CORS
   return '/api/v1'
 }
+

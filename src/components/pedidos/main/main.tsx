@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { OrderResponse, PaginatedOrdersResponse } from '@/src/types/order'
 import ReadMyOrdersService from '@/src/actions/order/read_my_orders'
+import { formatAddressCompact } from '@/src/lib/address-rules'
 import { getStatusConfig } from '@/src/lib/order-status'
 import { classifyErrorVariant, ErrorStateVariant, logClientError } from '@/src/lib/api-error'
 import { clientCache } from '@/src/lib/client-cache'
@@ -245,9 +246,9 @@ export default function MyOrdersClient() {
                           {formatDate(order.created_at)}
                         </span>
                         <span>•</span>
-                        <span className="flex items-center gap-1.5 font-mono">
-                          <MapPin size={13} aria-hidden="true" />
-                          CEP: {order.zip_code}
+                        <span className="flex items-center gap-1.5">
+                          <MapPin size={13} aria-hidden="true" className="shrink-0" />
+                          {formatAddressCompact(order.address)}
                         </span>
                       </div>
                     </div>

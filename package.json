@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test src/lib/__tests__/search.test.ts src/lib/__tests__/product-rules.test.ts src/lib/__tests__/api-error.test.ts"
+    "test:node": "node --test src/lib/__tests__/search.test.ts src/lib/__tests__/product-rules.test.ts src/lib/__tests__/api-error.test.ts",
+    "test:vitest": "vitest run",
+    "test": "npm run test:node && npm run test:vitest"
   },
   "dependencies": {
     "lucide-react": "^1.61.0",
@@ -17,12 +19,18 @@
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.13",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^4.7.0",
     "eslint": "^9",
     "eslint-config-next": "16.4.2",
+    "jsdom": "^26.1.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.7"
   }
 }

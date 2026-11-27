@@ -1,6 +1,7 @@
 import ApiUrlBase from '../api'
 import { createHttpApiError, fetchWithTimeout } from '@/src/lib/api-error'
 import { PaginatedOrdersResponse, OrderApiEnvelope } from '@/src/types/order'
+import { mapPaginatedOrdersDtoToDomain, OrderResponseDto } from './mapper'
 
 export interface ReadMyOrdersParams {
   page?: number
@@ -33,7 +34,9 @@ export default async function ReadMyOrdersService({
     throw createHttpApiError(res.status, 'ReadMyOrdersService')
   }
 
-  const json = (await res.json()) as OrderApiEnvelope<PaginatedOrdersResponse>
+  const json = (await res.json()) as OrderApiEnvelope<
+    Omit<PaginatedOrdersResponse, 'data'> & { data?: OrderResponseDto[] }
+  >
   const body = json['Body:'] ?? json.Body
 
   if (!body) {
@@ -46,8 +49,5 @@ export default async function ReadMyOrdersService({
     }
   }
 
-  return {
-    ...body,
-    data: body.data ?? [],
-  }
+  return mapPaginatedOrdersDtoToDomain(body)
 }

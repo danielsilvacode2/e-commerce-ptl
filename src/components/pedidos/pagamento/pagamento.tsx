@@ -26,6 +26,7 @@ import ReadOrderByIdService from '@/src/actions/order/read_order_by_id'
 import ReadPaymentService from '@/src/actions/payment/read_payment'
 import ProcessPaymentService from '@/src/actions/payment/process_payment'
 import ConfirmPaymentService, { ConfirmPaymentAction } from '@/src/actions/payment/confirm_payment'
+import { formatAddressFull } from '@/src/lib/address-rules'
 import { isMercadoPagoEnabled, preloadMercadoPagoSDK, tokenizeCardWithMercadoPago } from '@/src/lib/mercado-pago'
 import { classifyErrorVariant, ErrorStateVariant, logClientError } from '@/src/lib/api-error'
 import ErrorState from '@/src/components/ui/error-state'
@@ -894,9 +895,11 @@ export default function OrderPaymentClient({ orderId }: OrderPaymentClientProps)
                         </div>
 
                         <div className="border-t border-black/10 dark:border-white/10 pt-4 space-y-2 text-xs">
-                            <div className="flex justify-between text-neutral-600 dark:text-neutral-400">
-                                <span>CEP de Entrega</span>
-                                <span className="font-mono font-bold text-black dark:text-white">{order.zip_code}</span>
+                            <div className="flex flex-col gap-1 text-neutral-600 dark:text-neutral-400">
+                                <span>Endereço de Entrega</span>
+                                <span className="font-semibold text-black dark:text-white leading-relaxed">
+                                    {formatAddressFull(order.address)}
+                                </span>
                             </div>
                             <div className="flex justify-between text-neutral-600 dark:text-neutral-400">
                                 <span>Entrega</span>

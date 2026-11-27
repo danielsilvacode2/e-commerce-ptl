@@ -1,6 +1,7 @@
 import ApiUrlBase from '../api'
 import { ApiError, createHttpApiError, fetchWithTimeout } from '@/src/lib/api-error'
 import { OrderResponse, OrderApiEnvelope } from '@/src/types/order'
+import { mapOrderDtoToDomain, OrderResponseDto } from './mapper'
 
 export default async function ReadOrderByIdService(orderId: string): Promise<OrderResponse> {
   const baseUrl = ApiUrlBase()
@@ -14,7 +15,7 @@ export default async function ReadOrderByIdService(orderId: string): Promise<Ord
     throw createHttpApiError(res.status, 'ReadOrderByIdService')
   }
 
-  const json = (await res.json()) as OrderApiEnvelope<OrderResponse>
+  const json = (await res.json()) as OrderApiEnvelope<OrderResponseDto>
   const body = json['Body:'] ?? json.Body
 
   if (!body) {
@@ -23,5 +24,5 @@ export default async function ReadOrderByIdService(orderId: string): Promise<Ord
     })
   }
 
-  return body
+  return mapOrderDtoToDomain(body)
 }
