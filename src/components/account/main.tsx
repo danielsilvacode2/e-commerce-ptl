@@ -6,12 +6,22 @@ import { useSession } from '@/src/components/providers/session-provider'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { User, LogOut, Package, MessageCircle, ShieldCheck, ArrowUpRight } from 'lucide-react'
+import {
+  User,
+  LogOut,
+  Package,
+  MessageCircle,
+  ShieldCheck,
+  ArrowUpRight,
+  MapPin,
+} from 'lucide-react'
 import SupportChat from '@/src/components/account/support-chat'
 import SecurityPasswordReset from '@/src/components/account/security-password-reset'
+import AccountAddresses from '@/src/components/account/account-addresses'
+import ProfileNameEditor from '@/src/components/account/profile-name-editor'
 import { Skeleton } from '@/src/components/ui/skeletons'
 
-type AccountTab = 'profile' | 'security' | 'support'
+type AccountTab = 'profile' | 'addresses' | 'security' | 'support'
 
 interface TabItem {
   id: AccountTab
@@ -21,6 +31,7 @@ interface TabItem {
 
 const TABS: TabItem[] = [
   { id: 'profile', label: 'Meus Dados', icon: User },
+  { id: 'addresses', label: 'Endereços', icon: MapPin },
   { id: 'security', label: 'Segurança', icon: ShieldCheck },
   { id: 'support', label: 'Atendimento', icon: MessageCircle },
 ]
@@ -64,7 +75,7 @@ function Field({
 
 export default function MainAccount() {
   const router = useRouter()
-  const { user, authLoaded, clearSession } = useSession()
+  const { user, authLoaded, refreshSession, clearSession } = useSession()
   const [activeTab, setActiveTab] = useState<AccountTab>('profile')
   const [visitedTabs, setVisitedTabs] = useState<Set<AccountTab>>(() => new Set(['profile']))
 
@@ -75,6 +86,23 @@ export default function MainAccount() {
       router.replace('/login')
     }
   }, [authLoaded, user, router])
+
+  // Suporte a deep link /conta?tab=addresses|security|support
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const tabParam = new URLSearchParams(window.location.search).get('tab') as AccountTab | null
+    if (tabParam && TABS.some((t) => t.id === tabParam)) {
+      queueMicrotask(() => {
+        setActiveTab(tabParam)
+        setVisitedTabs((prev) => {
+          if (prev.has(tabParam)) return prev
+          const next = new Set(prev)
+          next.add(tabParam)
+          return next
+        })
+      })
+    }
+  }, [])
 
   function handleSelectTab(tab: AccountTab) {
     setActiveTab(tab)
@@ -115,7 +143,7 @@ export default function MainAccount() {
             MINHA CONTA
           </h1>
           <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-            Gerencie seus dados pessoais, segurança e atendimento.
+            Gerencie seus dados pessoais, endereços, segurança e atendimento.
           </p>
         </div>
         <Link
@@ -220,10 +248,17 @@ export default function MainAccount() {
                   Dados Pessoais
                 </h2>
                 <p className="mt-1 mb-6 text-sm text-neutral-600 dark:text-neutral-400">
-                  Informações cadastradas na sua conta.
+                  Informações cadastradas na sua conta. Você pode atualizar seu nome quando quiser.
                 </p>
                 <dl className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <Field label="Nome Completo" value={user.name} />
+                  <ProfileNameEditor
+                    userId={user.Id}
+                    currentName={user.name}
+                    email={user.email}
+                    onNameUpdated={async () => {
+                      await refreshSession()
+                    }}
+                  />
                   <Field label="E-mail" value={user.email} />
                   <Field
                     label="Tipo de Conta"
@@ -234,7 +269,18 @@ export default function MainAccount() {
                 </dl>
               </section>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <button
+                  type="button"
+                  onClick={() => handleSelectTab('addresses')}
+                  className="flex flex-col items-start gap-2 rounded-3xl bg-[#F2F0F1] dark:bg-[#1a1a1a] border border-black/5 dark:border-white/10 p-5 text-left transition-colors hover:bg-neutral-200 dark:hover:bg-[#242424] focus-visible:outline-2 focus-visible:outline-black dark:focus-visible:outline-white cursor-pointer"
+                >
+                  <MapPin size={20} aria-hidden="true" />
+                  <span className="text-xs font-bold uppercase tracking-wider">Meus Endereços</span>
+                  <span className="text-xs text-neutral-600 dark:text-neutral-400">
+                    Veja ou cadastre novos endereços.
+                  </span>
+                </button>
                 <Link
                   href="/pedidos"
                   className="flex flex-col gap-2 rounded-3xl bg-[#F2F0F1] dark:bg-[#1a1a1a] border border-black/5 dark:border-white/10 p-5 transition-colors hover:bg-neutral-200 dark:hover:bg-[#242424] focus-visible:outline-2 focus-visible:outline-black dark:focus-visible:outline-white"
@@ -269,6 +315,17 @@ export default function MainAccount() {
                 </button>
               </div>
             </div>
+
+            {visitedTabs.has('addresses') && (
+              <div
+                id="panel-addresses"
+                role="tabpanel"
+                aria-labelledby="tab-addresses"
+                className={activeTab === 'addresses' ? 'block' : 'hidden'}
+              >
+                <AccountAddresses />
+              </div>
+            )}
 
             {visitedTabs.has('security') && (
               <div

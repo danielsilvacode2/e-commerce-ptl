@@ -24,6 +24,7 @@ import ReadOrderByIdService from '@/src/actions/order/read_order_by_id'
 import ReadOrderHistoryService from '@/src/actions/order/read_order_history'
 import CancelOrderService from '@/src/actions/order/cancel_order'
 import RequestRefundService from '@/src/actions/order/request_refund'
+import { formatAddressFull } from '@/src/lib/address-rules'
 import { classifyErrorVariant, ErrorStateVariant, logClientError } from '@/src/lib/api-error'
 import { clientCache } from '@/src/lib/client-cache'
 import ErrorState from '@/src/components/ui/error-state'
@@ -479,7 +480,7 @@ export default function OrderDetailClient({ orderId }: OrderDetailClientProps) {
                 )}
 
                 {/* Metadados rápidos */}
-                <div className="mt-8 grid grid-cols-2 gap-4 border-t border-black/10 dark:border-white/10 pt-6 sm:grid-cols-4">
+                <div className="mt-8 grid grid-cols-2 gap-4 border-t border-black/10 dark:border-white/10 pt-6 sm:grid-cols-5">
                     <div>
                         <span className="block text-xs uppercase tracking-wider text-neutral-500 font-medium">
                             Realizado em
@@ -489,13 +490,13 @@ export default function OrderDetailClient({ orderId }: OrderDetailClientProps) {
                             {formatDate(order.created_at)}
                         </span>
                     </div>
-                    <div>
+                    <div className="col-span-2 sm:col-span-2">
                         <span className="block text-xs uppercase tracking-wider text-neutral-500 font-medium">
-                            CEP Entrega
+                            Endereço de Entrega
                         </span>
-                        <span className="mt-1 flex items-center gap-1.5 font-mono text-xs font-bold">
-                            <MapPin size={13} className="text-neutral-500" />
-                            {order.zip_code}
+                        <span className="mt-1 flex items-start gap-1.5 text-xs font-bold leading-relaxed">
+                            <MapPin size={13} className="mt-0.5 shrink-0 text-neutral-500" aria-hidden="true" />
+                            <span>{formatAddressFull(order.address)}</span>
                         </span>
                     </div>
                     <div>

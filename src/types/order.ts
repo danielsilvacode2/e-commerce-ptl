@@ -1,3 +1,5 @@
+import { Address } from './address'
+
 export type OrderStatus =
     | 'PENDING_PAYMENT'
     | 'PREPARING'
@@ -29,8 +31,9 @@ export interface UserOrderResponse {
 export interface OrderResponse {
     id: string;
     user: UserOrderResponse;
+    address: Address | null;
     status: OrderStatus;
-    zip_code: string;
+    address_validation_warning?: string;
     tracking_code?: string;
     refund_reason?: string;
     refund_rejection_reason?: string;

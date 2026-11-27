@@ -25,6 +25,7 @@ import ReadPaymentService from '@/src/actions/payment/read_payment'
 import AdminUpdateOrderStatusService from '@/src/actions/order/admin_update_order_status'
 import AdminApproveRefundService from '@/src/actions/order/admin_approve_refund'
 import AdminRejectRefundService from '@/src/actions/order/admin_reject_refund'
+import { formatAddressFull } from '@/src/lib/address-rules'
 import {
     getStatusConfig,
     VALID_STATUS_TRANSITIONS,
@@ -275,9 +276,9 @@ export default function AdminOrderDetailClient({ orderId }: AdminOrderDetailClie
                                     {formatDate(order.created_at)}
                                 </span>
                                 <span>•</span>
-                                <span className="flex items-center gap-1.5 font-mono">
-                                    <MapPin size={14} className="text-neutral-500" />
-                                    CEP: {order.zip_code}
+                                <span className="flex items-center gap-1.5">
+                                    <MapPin size={14} className="text-neutral-500 shrink-0" aria-hidden="true" />
+                                    {formatAddressFull(order.address)}
                                 </span>
                             </div>
                         </div>

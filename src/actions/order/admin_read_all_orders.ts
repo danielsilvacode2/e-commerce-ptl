@@ -1,5 +1,6 @@
 import ApiUrlBase from '../api';
 import { PaginatedOrdersResponse, OrderApiEnvelope } from '@/src/types/order';
+import { mapPaginatedOrdersDtoToDomain, OrderResponseDto } from './mapper';
 
 export interface AdminReadAllOrdersParams {
     page?: number;
@@ -45,7 +46,9 @@ export default async function AdminReadAllOrdersService({
         throw new Error('Erro ao buscar pedidos no painel.');
     }
 
-    const json = (await res.json()) as OrderApiEnvelope<PaginatedOrdersResponse>;
+    const json = (await res.json()) as OrderApiEnvelope<
+        Omit<PaginatedOrdersResponse, 'data'> & { data?: OrderResponseDto[] }
+    >;
     const body = json['Body:'] ?? json.Body;
 
     if (!body) {
@@ -58,8 +61,5 @@ export default async function AdminReadAllOrdersService({
         };
     }
 
-    return {
-        ...body,
-        data: body.data ?? [],
-    };
+    return mapPaginatedOrdersDtoToDomain(body);
 }
